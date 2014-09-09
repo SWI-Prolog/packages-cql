@@ -135,13 +135,6 @@ odbc_connection_call(Schema, Connection, Goal) :-
             ),
             thread_self(ThreadId),
             assert(sql_server_spid(Connection, SPID, Schema, ThreadId)),
-
-            ( compiling_from_makefile ->
-                true
-            
-            ; otherwise ->
-                advise([], informational, 'ODBC connection established as schema \'~w\' (SPID ~w, thread ~w)', [Schema, SPID, ThreadId])
-            ),
             odbc_connection_call(Schema, Connection, Goal)
         
         ; otherwise ->

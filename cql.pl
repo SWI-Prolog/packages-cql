@@ -1349,17 +1349,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
             
             ; otherwise ->
                 true
-            ),
-            ( compiling_from_makefile->
-                findall(cql:generated_sql(FileName, LineNumber, SQL, Parameters),
-                        sql_clause(GoalExpansion, SQL, Parameters),
-                        Clauses),                        
-                compile_aux_clauses([:-discontiguous(cql:generated_sql/4),
-                                     :-multifile(cql:generated_sql/4)|Clauses])
-            ; otherwise->
-                true
-            )                
-      
+            )
         ; nonvar(CompilationDirective),
           CompilationDirective = compile_at_runtime(IgnoreIfNullVariables) ->
             % Should this be a compile warning? runtime-compilation should now be officially deprecated
@@ -1369,14 +1359,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
             ; otherwise ->
                 true
             ),
-            GoalExpansion = cql_runtime(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber),
-            ( compiling_from_makefile->
-                compile_aux_clauses([:-discontiguous(kpi:cql_runtime_term),
-                                     :-multifile(kpi:cql_runtime_term),
-                                     kpi:cql_runtime_term])
-            ; otherwise->
-                true
-            )
+            GoalExpansion = cql_runtime(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber)
         ; otherwise ->
             throw(error(domain_error(cql_compilation_directive, CompilationDirective), _))
         ).

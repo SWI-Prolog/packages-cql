@@ -236,7 +236,6 @@ t7_to_unambiguous_atom(t7(Y, M, D, H, Min, S, Ms), Atom):-
         format(atom(Atom), '~`0t~w~4+-~`0t~w~3+-~`0t~w~3+ ~`0t~w~3+:~`0t~w~3+:~`0t~w~3+.~`0t~w~4+', [Y, M, D, H, Min, S, Ms]).
 
 primary_schema(X):- default_schema(X).
-compiling_from_makefile:- fail.
 domain_allowed_value(_, _).
 entity_name_module_file_base_name(_, _, _).
 event_notification_table(_, _):- fail.
