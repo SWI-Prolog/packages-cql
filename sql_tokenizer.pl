@@ -28,11 +28,14 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 
-    PostgreSQL is a trademark of the PostgreSQL Global Development Group
+    PostgreSQL is a trademark of the PostgreSQL Global Development Group. 
     Microsoft, SQL Server, and Windows are either registered trademarks or
     trademarks of Microsoft Corporation in the United States and/or other
-    countries.
-    SQLite is a registered trademark of Hipp, Wyrick & Company, Inc.
+    countries. 
+    SQLite is a registered trademark of Hipp, Wyrick & Company, Inc in the United
+    States. 
+    All other trademarks or registered trademarks are the property of their
+    respective owners.
 
 */
 
