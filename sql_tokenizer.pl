@@ -73,27 +73,65 @@ sql_tokens([Token|Tokens])-->
         sql_tokens(Tokens).
 
 optional_whitespace-->
-        [Code],
-        {memberchk(Code, " \t\n\r")}, 
+	char_in(_, " \t\n\r"),
         !,
         optional_whitespace.
 optional_whitespace--> [].
 
 :- meta_predicate read_until(//,*,?,?).
-read_until(_, [], [], []).
-read_until(Terminator, [])-->
+
+:- if(current_prolog_flag(double_quotes,string)).
+:- multifile check:valid_string_goal/1.
+check:valid_string_goal(sql_tokenizer:read_until(S,_,_,_)) :- string(S).
+
+read_until(Terminator, Codes) -->
+	{ string_codes(Terminator, List)
+	},
+	read_until_(List, Codes).
+:- else.
+read_until(Terminator, Codes) -->
+	read_until_(Terminator, Codes).
+:- endif.
+
+read_until_(_, [], [], []).
+read_until_(Terminator, [])-->
         Terminator, !.
-read_until(Terminator, [Code|Codes])-->
+read_until_(Terminator, [Code|Codes])-->
         [Code],
-        read_until(Terminator, Codes).
+        read_until_(Terminator, Codes).
 
 
 numeric_codes([Code|Codes])-->
-        [Code],
-        {memberchk(Code, "0123456789.")},
+	char_in(Code, "0123456789."),
         !,
         numeric_codes(Codes).
 numeric_codes([])--> [], !.
+
+
+%%	char_in(+Code, +Set) is semidet.
+%
+%	True when Code appears in Set.   Set  is a double-quoted string.
+%	Calls code_in_set/2 to deal with the SWI-6/7 compatibility.
+
+char_in(Code, Set) -->
+	[Code],
+	{ code_in_set(Code, Set) }.
+
+:- if(current_prolog_flag(double_quotes,string)).
+:- multifile check:valid_string_goal/1.
+
+check:valid_string_goal(sql_tokenizer:char_in(_,S,_,_)) :- string(S).
+check:valid_string_goal(sql_tokenizer:code_in_set(_,S)) :- string(S).
+
+code_in_set(Code, Set) :-
+	string_code(_, Set, Code), !.
+
+:- else.
+
+code_in_set(Code, Set) :-
+	memberchk(Code, Set).
+
+:- endif.
 
 quoted_literal([39|Codes], [39, 39|In], Out):-
         !,
@@ -153,8 +191,7 @@ sql_token(literal(Literal, identifier))-->
 % This should return numeric/2 instead of decimal/2, according to http://msdn.microsoft.com/en-us/library/ms187746
 % But it also says they are functionally equivalent
 sql_token(literal(Literal, Type))-->
-        [Code],
-        {memberchk(Code, "0123456789")},
+	char_in(Code, "0123456789"),
         !,
         numeric_codes(Codes),
         {number_codes(Literal, [Code|Codes])},
@@ -195,7 +232,7 @@ sql_token_1([], [], []):- !.
 % Any of these codes should end the current token. This allows us to correctly
 % tokens 3+4 as the sum of two values rather than a single token
 sql_token_1([], [Terminator|Codes], [Terminator|Codes]):-
-        memberchk(Terminator, ".,()*+-/<=> \t\n\r"), !.
+        code_in_set(Terminator, ".,()*+-/<=> \t\n\r"), !.
 
 % Everything else goes into the token
 sql_token_1([Code|Codes])-->
