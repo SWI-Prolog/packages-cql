@@ -8088,34 +8088,28 @@ statistic_monitored_attribute_change(Schema, TableName, ColumnName, Value, Delta
 %%      dbms(+Schema, -DBMSName).
 %       Determine the DBMS for a given Schema.
 %       Can be autoconfigured.
-dbms(Schema, DBMS):-
-        cql_metadata:dbms(Schema, DBMS).
+:-multifile(dbms/2).
 
 %%      odbc_data_type(+Schema, +TableSpec, +ColumnName, ?OdbcDataType)
 %       OdbcDataType must be a native SQL datatype, such as varchar(30) or decimal(10, 5)
 %       Can be autoconfigured.
-odbc_data_type(Schema, TableSpec, ColumnName, OdbcDataType):-
-        cql_metadata:odbc_data_type(Schema, TableSpec, ColumnName, OdbcDataType).
+:-multifile(odbc_data_type/4).
 
 %%      primary_key_column_name(+Schema, +TableName, -PrimaryKeyAttributeName).
 %       Can be autoconfigured.
-primary_key_column_name(Schema, TableName, PrimaryKeyAttributeName):-
-        cql_metadata:primary_key_column_name(Schema, TableName, PrimaryKeyAttributeName).
+:-multifile(primary_key_column_name/3).
 
 %%      database_attribute(?EntityType:table/view, ?Schema:atom, ?EntityName:atom, ?ColumnName:atom, ?DomainOrNativeType:atom, ?AllowsNulls:allows_nulls(true/false), ?IsIdentity:is_identity(true/false), ?ColumnDefault) is nondet.
 %       Can be autoconfigured.
-database_attribute(EntityType, Schema, EntityName, ColumnName, DomainOrNativeType, AllowsNulls, IsIdentity, ColumnDefault):-
-        cql_metadata:database_attribute(EntityType, Schema, EntityName, ColumnName, DomainOrNativeType, AllowsNulls, IsIdentity, ColumnDefault).
+:-multifile(database_attribute/8).
 
 %%      database_attribute(?DomainName:atom, ?OdbcDataType) is nondet.
 %       Can be autoconfigured.
-database_domain(DomainName, OdbcDataType):-
-        cql_metadata:database_domain(DomainName, OdbcDataType).
+:-multifile(database_domain/2).
 
 %%      routine_return_type(?Schema:atom, ?EntityName:atom, ?OdbcType).
 %       Can be autoconfigured
-routine_return_type(Schema, EntityName, OdbcType):-
-        cql_metadata:routine_return_type(Schema, EntityName, OdbcType).
+:-multifile(routine_return_type/3).
 
 %%      database_constraint(?Schema:atom, ?EntityName:atom, ?ConstraintName:atom, ?Constraint) is nondet.
 %       Constraint is one of:
@@ -8124,8 +8118,7 @@ routine_return_type(Schema, EntityName, OdbcType):-
 %          * unique(ColumnNames:list)
 %          * check(CheckClause)
 %       In theory this can be autoconfigured too, but I have not written the code for it yet
-database_constraint(Schema, EntityName, ConstraintName, Constraint):-
-        cql_metadata:database_constraint(Schema, EntityName, ConstraintName, Constraint).
+:-multifile(database_constraint/4).
 
 user:goal_expansion(Schema:{Cql}, GoalExpansion) :-
         atom(Schema),
@@ -8260,9 +8253,6 @@ atom_to_rational(Atom, Rational):-
         atom_to_term(Atom, X, _),
         Rational is rationalize(X).
 
-
-get_host_name(X):- gethostname(X).
-
 % FIXME: These should all not be necessary!
 sql_gripe_exempt_module(_).
 t7_to_unambiguous_atom(t7(Y, M, D, H, Min, S, Ms), Atom):-
@@ -8286,25 +8276,6 @@ t7_now(t7(Y, M, D, HH, MM, SS, NN)):-
         stamp_date_time(X, date(Y,M,D,HH,MM,S,_,_,_), local),
         NN is round(float_fractional_part(S) * 1000),
         SS is integer(float_integer_part(S)).
-
-??(Goal):-
-        setup_call_catcher_cleanup(format('CALL  ~q~n', [Goal]),
-                                   Goal,
-                                   Catcher,
-                                   ( Catcher == ! ->
-                                       format('CUT   ~q~n', [Goal])
-                                   ; Catcher == fail->
-                                       format('FAIL  ~q~n', [Goal])
-                                   ; Catcher == exit->
-                                       format('EXIT  ~q~n', [Goal])
-                                   ; Catcher = error(E)->
-                                       format('ERROR  ~q~n~w~n', [E])
-                                   )),
-        ( var(Catcher)->
-            format('PEND  ~q~n', [Goal])
-        ; otherwise->
-            true
-        ).
 
 
 

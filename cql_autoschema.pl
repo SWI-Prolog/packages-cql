@@ -185,6 +185,6 @@ whitespace--> [].
 
 user:term_expansion(:-build_schema(Schema), Facts):-
         odbc_connection_call(Schema, Connection, odbc_get_connection(Connection, dbms_name(DBMS))),
-        setof(cql_metadata:Fact,
+        setof(cql:Fact,
               schema_fact(Schema, DBMS, Fact),
               Facts).
