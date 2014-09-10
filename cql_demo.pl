@@ -65,10 +65,8 @@
 
 
 cql:application_value_to_odbc_value_hook(Type, _, _, _, _, Rational, Atom):-
-        writeln(hook(Type)),
         Type = decimal(_,S),
-        format(atom(Atom), '~*f', [S, Rational]),
-        writeln(rational=Atom).
+        format(atom(Atom), '~*f', [S, Rational]).
 
 cql:odbc_value_to_application_value_hook(decimal(_,_), _, _, _, _, Value, Rational):-
         ( atom_prefix(Value, '.') ->
@@ -119,7 +117,7 @@ join_select(X):-
          order_by([+X])}.
 
 aggregate_select(X):-
-        {[],
+        ??? {[],
          cql_table_1 :: [varchar_column-Join]
         =*= % Inner join based on shared variables
         cql_table_2 :: [varchar_column-Join,

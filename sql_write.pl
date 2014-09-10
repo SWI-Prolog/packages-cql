@@ -43,6 +43,8 @@
                      sql_quote_codes/3,
                      format_sql_error/3]).
 
+:-use_module(library(cql/sql_keywords)).
+
 sql_write(Stream, Term, Options):-
         new_sql_stream(Output),
         sql_write_term(Term, '', Options, Output, Result),

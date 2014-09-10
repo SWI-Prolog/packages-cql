@@ -166,7 +166,7 @@ odbc_cleanup_and_disconnect(Connection) :-
         catch_all(odbc_cleanup_and_disconnect_1(Connection),
                   E,
                   ( thread_self(ThreadId),
-                    event_log(error, '[~w] odbc_cleanup_and_disconnect/1 : ~w', [ThreadId, E]))).
+                    cql_log([], error, '[~w] odbc_cleanup_and_disconnect/1 : ~w', [ThreadId, E]))).
 
 odbc_cleanup_and_disconnect_1(Connection) :-        
         thread_self(ThreadId),

@@ -135,6 +135,12 @@ Because we have truncation, the order of operations is crucial: Although (x * y)
 
 :-use_module(library(chr)).
 :-use_module(library(dcg/basics)).
+:-use_module(library(cql/sql_keywords)).
+:-use_module(library(cql/sql_write)).
+:-use_module(library(cql/sql_tokenizer)).
+
+:-use_module(library(cql/cql), [default_schema/1,
+                                database_attribute/8]).
 
 :-chr_option(line_numbers, on).
 :-chr_option(check_guard_bindings, error).
@@ -836,8 +842,9 @@ sized_varchar_type(L, L, O, O, P0, P0, Length, Source, SourceT, T):-
             type_constraint_ready(Qid, T)
         ).
 
-user:goal_expansion(explain(_), true).
-%user:goal_expansion(explain(A), (format(user_error, '*** ~w~n', [A]))).
+sql_explain(_).
+user:goal_expansion(sql_explain(_), true).
+%user:goal_expansion(sql_explain(A), (format(user_error, '*** ~w~n', [A]))).
 
 remove_quoted_column @
         type_constraint(QueryId, Source, Type, typeof(identifier(A, B), literal(ColumnName, string)))
@@ -877,7 +884,7 @@ define_type_from_query @
         \
         type_constraint(QueryId, Source, Type, typeof(identifier(_, TableAlias), SourceColumnName))
         <=>
-        primary_schema(Schema),
+        default_schema(Schema),
         fetch_database_attribute(_, Schema, TableName, SourceColumnName, ColumnType, _, _, _)
         |
         type_constraint(QueryId, Source, Type, ColumnType).
@@ -888,7 +895,7 @@ define_type_from_query_with_unnamed_table @
         type_constraint(QueryId, Source, Type, typeof({no_qualifier}, SourceColumnName))
         <=>
         % Have to search all tables :-(
-        primary_schema(Schema),
+        default_schema(Schema),
         %writeln(checking(Schema, TableName, SourceColumnName)),
         fetch_database_attribute(_, Schema, TableName, SourceColumnName, ColumnType, _, _, _)
         %writeln(found)
@@ -900,7 +907,7 @@ define_type_from_uncorrelated_table_with_explicit_reference @ % Yuck!
         \
         type_constraint(QueryId, Source, Type, typeof(identifier(_, TableName), SourceColumnName))
         <=>
-        primary_schema(Schema),
+        default_schema(Schema),
         fetch_database_attribute(_, Schema, TableName, SourceColumnName, ColumnType, _, _, _)
         |
         type_constraint(QueryId, Source, Type, ColumnType).
@@ -912,7 +919,7 @@ define_type_from_uncorrelated_table @
         <=>
         X \= identifier(_,_),
         % Have to search all tables here, too :-(
-        primary_schema(Schema),
+        default_schema(Schema),
         fetch_database_attribute(_, Schema, TableName, SourceColumnName, ColumnType, _, _, _)
         |
         type_constraint(QueryId, Source, Type, ColumnType).
@@ -924,14 +931,14 @@ crush_xml_subquery_into_scalar @
         \
         type_constraint(QueryId, Source, Type, scalar([merged(_, _, _Subtype)]))
         <=>
-        explain(crush_xml),
+        sql_explain(crush_xml),
         type_constraint(QueryId, Source, Type, native_type(nvarchar(max))).
 
 
 crush_subquery_into_scalar @
         type_constraint(QueryId, Source, Type, scalar([merged(_, _, Subtype)]))
         <=>
-        explain(crush_subquery),
+        sql_explain(crush_subquery),
         type_constraint(QueryId, Source, Type, Subtype).
                        
 concatenate_char @
@@ -948,7 +955,7 @@ concatenate_char @
         ; otherwise ->
             Z is min(N+M, 8000)
         ),
-        explain(concatenate_char),
+        sql_explain(concatenate_char),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(varchar(Z))),
         type_constraint_ready(QueryId, Type).
@@ -967,7 +974,7 @@ concatenate_nchar_and_varchar @
         ; otherwise->
             Z is min(N+M, 8000)
         ),
-        explain(concatenate_nchar_and_varchar),
+        sql_explain(concatenate_nchar_and_varchar),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(nvarchar(Z))),
         type_constraint_ready(QueryId, Type).
@@ -986,7 +993,7 @@ concatenate_nchar_and_nchar @
         ; otherwise->
             Z is min(N+M, 8000)
         ),
-        explain(concatenate_nchar_and_nchar),
+        sql_explain(concatenate_nchar_and_nchar),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(nvarchar(Z))),
         type_constraint_ready(QueryId, Type).
@@ -1000,7 +1007,7 @@ merge_sized_chars @
         <=>
         ( integer(N), integer(M), N < M )
         |
-        explain(merge_sized_chars),
+        sql_explain(merge_sized_chars),
         type_constraint_ready(QueryId, Type).
 
 union_chars @
@@ -1015,7 +1022,7 @@ union_chars @
         ; N >= M
         )
         |
-        explain(union_chars(N, M)),
+        sql_explain(union_chars(N, M)),
         type_constraint_ready(QueryId, Type).
 
 union_nchars @
@@ -1030,7 +1037,7 @@ union_nchars @
         ; N >= M
         )
         |
-        explain(union_nchars),
+        sql_explain(union_nchars),
         type_constraint_ready(QueryId, Type).
 
 union_nchar_and_varchar @
@@ -1047,7 +1054,7 @@ union_nchar_and_varchar @
         ; otherwise->
             Z is max(N, M)
         ),
-        explain(union_nchar_and_varchar),
+        sql_explain(union_nchar_and_varchar),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(nvarchar(Z))),        
         type_constraint_ready(QueryId, Type).
@@ -1059,7 +1066,7 @@ expand_precision_integer_to_decimal @ % These come from literals in the query li
         \
         type_constraint(QueryId, Source2, Type, native_type(int(N)))
         <=>
-        explain(precision_integer_to_decimal(N,0)),
+        sql_explain(precision_integer_to_decimal(N,0)),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(decimal(N, 0))).
 
@@ -1069,7 +1076,7 @@ expand_precision_integer_to_general_integer @
         type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(int(_)))
         <=>
-        explain(precision_integer_to_int),
+        sql_explain(precision_integer_to_int),
         type_constraint_ready(QueryId, Type).
 
 
@@ -1079,7 +1086,7 @@ expand_integer_to_decimal @
         \
         type_constraint(QueryId, Source2, Type, native_type(int))
         <=>
-        explain(integer_to_decimal_for_union),
+        sql_explain(integer_to_decimal_for_union),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(decimal(10,0))).
 
@@ -1089,7 +1096,7 @@ expand_tinyint_to_int @
         type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(tinyint))
         <=>
-        explain(tinyint_to_int),
+        sql_explain(tinyint_to_int),
         type_constraint_ready(QueryId, Type).
 
 expand_tinyint_to_precision_int @
@@ -1098,7 +1105,7 @@ expand_tinyint_to_precision_int @
         type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(tinyint))
         <=>
-        explain(tinyint_to_precision_integer),
+        sql_explain(tinyint_to_precision_integer),
         type_constraint_ready(QueryId, Type).
 
 
@@ -1108,7 +1115,7 @@ expand_int_to_float @
         type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(int))
         <=>
-        explain(int_to_float),
+        sql_explain(int_to_float),
         type_constraint_ready(QueryId, Type).
 
 %Quirk. Note that if the varchar is anything BUT spaces, you get an error when selecting from the view!
@@ -1118,7 +1125,7 @@ quirk_tinyint_and_varchar_is_tinyint @
         type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(varchar(_)))
         <=>
-        explain(tinyint_and_varchar),
+        sql_explain(tinyint_and_varchar),
         type_constraint_ready(QueryId, Type).
 
 max_varchars @
@@ -1129,7 +1136,7 @@ max_varchars @
         <=>
         integer(A), integer(B), A >= B
         |
-        explain(max_varchars),                
+        sql_explain(max_varchars),                
         type_constraint_ready(QueryId, Type).
 
 max_nvarchar_with_varchar @
@@ -1142,7 +1149,7 @@ max_nvarchar_with_varchar @
         ; otherwise->
             C is max(A, B)
         ),
-        explain(max_vvarchar_with_varchar),
+        sql_explain(max_vvarchar_with_varchar),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(nvarchar(C))),
         type_constraint_ready(QueryId, Type).
@@ -1158,7 +1165,7 @@ str_expression_with_int @
         ; otherwise ->
             B is max(A, 10)
         ),
-        explain(str_expression_with_int),
+        sql_explain(str_expression_with_int),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(varchar(B))),
         type_constraint_ready(QueryId, Type).
@@ -1170,7 +1177,7 @@ quirk_int_and_varchar_is_int @
         type_merge_hint(Type, _),
         type_constraint(QueryId, Source2, Type, native_type(varchar(_)))
         <=>
-        explain(int_and_varchar),
+        sql_explain(int_and_varchar),
         type_mismatch(Source1, Source2, int, varchar),
         type_constraint_ready(QueryId, Type).
 
@@ -1180,7 +1187,7 @@ quirk_int_and_varchar_is_int @
         type_merge_hint(Type, _),
         type_constraint(QueryId, Source2, Type, native_type(varchar(_)))
         <=>
-        explain(int_and_varchar),
+        sql_explain(int_and_varchar),
         type_mismatch(Source1, Source2, int, varchar),
         type_constraint_ready(QueryId, Type).
 
@@ -1192,7 +1199,7 @@ quirk_datetime_and_int_is_int @
         type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(int))
         <=>
-        explain(datetime_and_int),                
+        sql_explain(datetime_and_int),                
         type_constraint_ready(QueryId, Type).
 
 %Quirk
@@ -1202,7 +1209,7 @@ quirk_datetime_and_precision_int_is_precision_int @
         type_merge_hint(Type, _),                
         type_constraint(QueryId, _, Type, native_type(int(_)))
         <=>
-        explain(datetime_and_precision_int),
+        sql_explain(datetime_and_precision_int),
         type_constraint_ready(QueryId, Type).
 
 
@@ -1214,7 +1221,7 @@ integer_addition @
         <=>
         memberchk(Hint, [add, subtract, concatenate])
         |
-        explain(integer_addition),                
+        sql_explain(integer_addition),                
         type_constraint_ready(QueryId, Type).
 
 integer_multiplication_requires_promotion @
@@ -1224,7 +1231,7 @@ integer_multiplication_requires_promotion @
         <=>
         memberchk(Hint, [multiply, divide(_)])
         |
-        explain(promote_int_for_multiplication),                                
+        sql_explain(promote_int_for_multiplication),                                
         type_constraint(QueryId, Source, Type, native_type(decimal(10,0))).
         
 
@@ -1236,7 +1243,7 @@ integer_and_decimal_arithmetic @
         <=>
         Hint \== union
         |
-        explain(promote_int_to_decimal_for_arithmetic(Hint)),
+        sql_explain(promote_int_to_decimal_for_arithmetic(Hint)),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(decimal(10,0))).
         
@@ -1306,7 +1313,7 @@ expand_type_scope_decimal_with_hint @
             Px = P,
             Sx = S
         ),
-        explain(decimal_arithmetic(Hint, Px, Sx)),
+        sql_explain(decimal_arithmetic(Hint, Px, Sx)),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(decimal(Px, Sx))),
         type_constraint_ready(QueryId, Type).
@@ -1348,7 +1355,7 @@ union_of_type_decimal_domains_is_not_a_domain @
         fetch_domain_data_type(D1, decimal(A1, A2)),
         fetch_domain_data_type(D2, decimal(B1, B2))
         |
-        explain(union_domains),                
+        sql_explain(union_domains),                
         most_general_type(QueryId, Source1, Source2, decimal(A1, A2), decimal(B1, B2), union, Type),
         commit(QueryId).
 
@@ -1373,7 +1380,7 @@ merge_domains @
         ; otherwise->
             most_general_type(QueryId, Source1, Source1, T1, T2, Hint, Type)
         ),
-        explain(join_domains_for(Hint, D1, D2, Type)),                
+        sql_explain(join_domains_for(Hint, D1, D2, Type)),                
         commit(QueryId).
 
 merge_domain_to_native @
@@ -1384,7 +1391,7 @@ merge_domain_to_native @
         <=>
         fetch_domain_data_type(D, T)
         |
-        explain(join_domain_to_native),                
+        sql_explain(join_domain_to_native),                
         most_general_type(QueryId, Source1, Source2, T, NT, Hint, Type),
         commit(QueryId).
 
@@ -1394,7 +1401,7 @@ drop_nulltype_in_favour_of_domain @
         type_constraint(QueryId, Source1, Type, domain(D)),
         type_constraint(QueryId, Source2, Type, {nulltype})
         <=>
-        explain(drop_nulltype_for_domain),                
+        sql_explain(drop_nulltype_for_domain),                
         fetch_domain_data_type(D, T),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(T)),
@@ -1406,7 +1413,7 @@ drop_nulltype_in_favour_of_native_type @
         type_merge_hint(Type, Hint),
         type_constraint(QueryId, _, Type, {nulltype})
         <=>
-        explain(drop_nulltype_for_native(T, Hint)),
+        sql_explain(drop_nulltype_for_native(T, Hint)),
         type_constraint_ready(QueryId, Type).
 
 
@@ -1436,7 +1443,7 @@ drop_nulltype_in_favour_of_another_nulltype @
         ; otherwise->
             true
         ),
-        explain(drop_nulltype_for_nulltype(Hint)),
+        sql_explain(drop_nulltype_for_nulltype(Hint)),
         type_constraint_ready(QueryId, Type).
 
 force_type_not_domain @
@@ -1446,7 +1453,7 @@ force_type_not_domain @
         <=>
         fetch_domain_data_type(D, decimal(P, S))
         |
-        explain(forcing_decimal_not_domain(D)),
+        sql_explain(forcing_decimal_not_domain(D)),
         type_constraint(QueryId, Source, Type, native_type(decimal(P, S))).
 
 force_type_not_domain @
@@ -1456,7 +1463,7 @@ force_type_not_domain @
         <=>
         fetch_domain_data_type(D, varchar(L))
         |
-        explain(forcing_varchar_not_domain(D)),
+        sql_explain(forcing_varchar_not_domain(D)),
         type_constraint(QueryId, Source, Type, native_type(varchar(L))).
 
 force_type_not_domain @
@@ -1465,7 +1472,7 @@ force_type_not_domain @
         <=>
         fetch_domain_data_type(D, datetime)
         |
-        explain(forcing_datetime_not_domain(D)),
+        sql_explain(forcing_datetime_not_domain(D)),
         type_constraint(QueryId, Source, Type, native_type(datetime)).
         
 
@@ -1473,14 +1480,14 @@ rounded_int_is_decimal @ /* is it? */
         type_merge_hint(Type, round),
         type_constraint(QueryId, Source, Type, native_type(int))
         <=>
-        explain(rounded_int_is_decimal),
+        sql_explain(rounded_int_is_decimal),
         type_constraint(QueryId, Source, Type, native_type(decimal(10,0))).
 
 rounded_decimal_has_no_scale @
         type_merge_hint(Type, round),
         type_constraint(QueryId, Source, Type, native_type(decimal(P, _)))
         <=>
-        explain(rounded_decimal_has_no_scale),
+        sql_explain(rounded_decimal_has_no_scale),
         type_constraint(QueryId, Source, Type, native_type(decimal(P,0))).
 
 
@@ -1491,7 +1498,7 @@ force_domain_type_to_sum @
         <=>
         fetch_domain_data_type(D, decimal(_, S))
         |
-        explain(forcing_domain_to_sum(D)),
+        sql_explain(forcing_domain_to_sum(D)),
         type_constraint(QueryId, Source, Type, native_type(decimal(38, S))).
 
 force_domain_type_to_avg @
@@ -1499,7 +1506,7 @@ force_domain_type_to_avg @
         type_merge_hint(Type, avg),
         type_constraint(QueryId, Source, Type, domain(D))
         <=>
-        explain(forcing_domain_to_avg(D)),
+        sql_explain(forcing_domain_to_avg(D)),
         type_constraint(QueryId, Source, Type, native_type(decimal(38, 6))).
 
 force_native_type_to_sum @
@@ -1507,7 +1514,7 @@ force_native_type_to_sum @
         type_merge_hint(Type, sum),
         type_constraint(QueryId, Source, Type, native_type(decimal(_, S)))
         <=>
-        explain(forcing_native_to_sum),
+        sql_explain(forcing_native_to_sum),
         type_constraint(QueryId, Source, Type, native_type(decimal(38, S))).
 
 force_native_type_to_avg @
@@ -1515,7 +1522,7 @@ force_native_type_to_avg @
         type_merge_hint(Type, avg),
         type_constraint(QueryId, Source, Type, native_type(decimal(_, _)))
         <=>
-        explain(forcing_native_to_avg),
+        sql_explain(forcing_native_to_avg),
         type_constraint(QueryId, Source, Type, native_type(decimal(38, 6))).
 
 union_precision_ints @
@@ -1523,7 +1530,7 @@ union_precision_ints @
         type_constraint(QueryId, Source1, Type, native_type(int(_))),
         type_constraint(QueryId, Source2, Type, native_type(int(_)))
         <=>
-        explain(union_precision_ints),
+        sql_explain(union_precision_ints),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(int)),
         type_constraint_ready(QueryId, Type).
@@ -1534,7 +1541,7 @@ union_identical_natives @
         type_merge_hint(Type, union),        
         type_constraint(QueryId, _, Type, native_type(T))
         <=>
-        explain(union_identical_natives(T)),
+        sql_explain(union_identical_natives(T)),
         type_constraint_ready(QueryId, Type).
 
 merge_datetime_and_int @
@@ -1542,7 +1549,7 @@ merge_datetime_and_int @
         type_constraint(QueryId, Source1, Type, native_type(datetime)),
         type_constraint(QueryId, Source2, Type, native_type(decimal(_,_)))
         <=>
-        explain(operation_with_datetime_and_decimal),
+        sql_explain(operation_with_datetime_and_decimal),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(datetime)),
         type_constraint_ready(QueryId, Type).
@@ -1553,7 +1560,7 @@ union_of_datetime_and_date_is_datetime @
         \
         type_constraint(QueryId, Source, Type, native_type(date))
         <=>
-        explain(union_of_datetime_and_date),
+        sql_explain(union_of_datetime_and_date),
         type_constraint_ready(QueryId, Type).
 
 
@@ -1561,21 +1568,21 @@ accept_domain @
         type_constraint(QueryId, _, Type, domain(Domain)),
         type_constraint_ready(QueryId, Type)
         <=>
-        explain(accepting(domain(Domain), Type)),
+        sql_explain(accepting(domain(Domain), Type)),
         Type = domain(Domain).
         
 accept_native_type @
         type_constraint(QueryId, _, Type, native_type(Native)),
         type_constraint_ready(QueryId, Type)
         <=>
-        explain(accepting(native_type(Native), Type)),
+        sql_explain(accepting(native_type(Native), Type)),
         Type = native_type(Native).
 
 accept_nulltype @
         type_constraint(QueryId, _, Type, {nulltype}),
         type_constraint_ready(QueryId, Type)
         <=>
-        explain(accepting_nulltype(Type)),
+        sql_explain(accepting_nulltype(Type)),
         Type = {nulltype}.
 
 
@@ -1583,7 +1590,7 @@ find_column_types @
         query_table(QueryId, _, identifier(_, TableName)),
         find_all_column_types(QueryId, Source, Tail)
         <=>
-        primary_schema(Schema),      
+        default_schema(Schema),      
         findall(merged(ColumnName, Source, Domain),
                 fetch_database_attribute(_, Schema, TableName, ColumnName, Domain, _, _, _),
                 Columns),
@@ -1927,8 +1934,8 @@ builtin_function('Microsoft SQL Server', _, user_name).
 
 routine_type(Name, Type):-
         % Note that this is not the DBMS we are reading IN, but the one we will eventually USE. This is why
-        % I call primary_schema here.
-        primary_schema(Schema), 
+        % I call default_schema here.
+        default_schema(Schema), 
         dbms(Schema, DBMS),
         strip_sql_comments(Name, identifier(_, Identifier)),
         ( dbms_normalize_name(DBMS, Identifier, NormalizedName),

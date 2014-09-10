@@ -59,6 +59,7 @@
           cql_statement_location/2,
           cql_temporary_column_name/4,
           cql_log/4,
+          default_schema/1,
           odbc_execute_with_statistics/4,
           access_token_to_user_id/2,
           atom_to_rational/2,
@@ -1276,7 +1277,7 @@ cql_get_module_default_schema(Module,                          % +
         ( module_default_schema(Module, Schema) ->
             ModuleDefaultSchema = Schema
         ; 
-            primary_schema(ModuleDefaultSchema)
+            default_schema(ModuleDefaultSchema)
         ).
 
 % This lets me control the compiletime checks via an environment variable
@@ -2167,7 +2168,7 @@ fully_compile @
         simplify,
         ( debugging(cql(compile)) ->
             with_output_to(codes(Codes), chr_show_store(cql)),
-            console('==========~n~s^^^^^^^^^^~n~n', [Codes])
+            debug(cql(compile), '==========~n~s^^^^^^^^^^~n~n', [Codes])
         ;
             true
         ),      
@@ -5963,7 +5964,7 @@ union_if_external_variables_the_same_and_there_is_no_order_by @
         ( debugging(cql(union)) ->
             prolog_load_context(source, FileName),
             prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)),
-            console('UNION created ~w:~w~n', [FileName, LineNumber])
+            debug(cql(union), 'UNION created ~w:~w~n', [FileName, LineNumber])
         ;
             true
         ).
@@ -7370,16 +7371,20 @@ debug_before @
         
         ( Mode == full ->
             format(atom(HumanSql), HSql, HBindings),
-            show_debug_output('[~w]  ~|~A~w~A~n~w~n', [ThreadId, [foreground-Colour, bold-on], PortName, {reset}, HumanSql])
-
+            ansi_format([], '[~w]  ~|', [ThreadId]),
+            ansi_format([fg(Colour), bold], '~w', [PortName]),
+            ansi_format([], '~n~w~n', [HumanSql])
         ; Mode == minimal ->
             format(atom(VerboseHumanSql), HSql, HBindings),
             remove_newlines_and_truncate(VerboseHumanSql, HumanSql),
-            show_debug_output('[~w]  ~|~A~w~A ~w~n', [ThreadId, [foreground-Colour, bold-on], PortName, {reset}, HumanSql])
-
+            ansi_format([], '[~w]  ~|', [ThreadId]),
+            ansi_format([fg(Colour), bold], '~w', [PortName]),
+            ansi_format([], '~w~n', [HumanSql])
         ; Mode == explicit ->
             format(atom(HumanSql), HSql, HBindings),
-            show_debug_output('[~w]  ~|~A~w~A~n~w~n', [ThreadId, [foreground-Colour, bold-on], PortName, {reset}, HumanSql])
+            ansi_format([], '[~w]  ~|', [ThreadId]),
+            ansi_format([fg(Colour), bold], '~w', [PortName]),
+            ansi_format([], '~n~w~n', [HumanSql])
         ),
         original_human_query(HumanSql).
 
@@ -7392,33 +7397,6 @@ declaration_sql(Schema, TableName, AttributeName, Binding, I, Declaration, Assig
         Parameter = parameter(ParameterName).
 
     
-% declare @P1 varchar(20), @P2 datetime, ...
-declare_parameters(_, []).
-declare_parameters(Number, [DataType | OdbcParameterDataTypes]) :-
-        console('declare @P~d ~w', [Number, DataType]),
-        NextNumber is Number + 1,
-        declaration_list(NextNumber, OdbcParameterDataTypes).
-
-% @P2 datetime, @P3 varchar(30), ...
-declaration_list(_, []) :- console('~n', []).
-declaration_list(Number, [DataType | OdbcParameterDataTypes]) :-
-        console(', @P~d ~w', [Number, DataType]),
-        NextNumber is Number + 1,
-        declaration_list(NextNumber, OdbcParameterDataTypes).
-        
-% set @P1 = 'EDWARDS_JA'
-% set @P2 = '2014-08-11 00:00.000'
-% ...
-set_parameter_values(_, []).
-set_parameter_values(Number, [ParameterValue | OdbcParameters]) :-
-        ( ParameterValue == {null} ->
-            console('set @P~d = null~n', [Number])
-        ; otherwise ->
-            console('set @P~d = \'~p\'~n', [Number, ParameterValue])
-        ),
-        NextNumber is Number + 1,
-        set_parameter_values(NextNumber, OdbcParameters).
-
 debug_after @
         show_debug(Mode),
         debug_statistics(C1, T1, I1),
@@ -7437,35 +7415,47 @@ debug_after @
         port_label(Port, PortName, Colour),
         ( memberchk(Port, [!, exit]) ->
             ( Outputs == [ignore_output] ->
-                show_debug_output('[~w]  ~|~A~w~A ~w', [ThreadId, [foreground-Colour, bold-on], PortName, {reset}, HumanSql]),
-                show_debug_output(' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
+                ansi_format([], '[~w]  ~|', [ThreadId]),
+                ansi_format([fg(Colour), bold], '~w', [PortName]),
+                ansi_format([], '~w', [HumanSql]),
+                ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                
 
             ; otherwise ->
                 ( Mode == minimal ->
-                    show_debug_output('[~w]  ~|~A~w~A ~w', [ThreadId, [foreground-Colour, bold-on], PortName, {reset}, HumanSql]),
-                    show_debug_output(' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
+                    ansi_format([], '[~w]  ~|', [ThreadId]),
+                    ansi_format([fg(Colour), bold], '~w', [PortName]),
+                    ansi_format([], '~w', [HumanSql]),
+                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                                    
                 ; Outputs = affected(N)->
-                    show_debug_output('~ANumber of rows affected~A: ~w~n', [[foreground-Colour, bold-on], {reset}, N]),
-                    show_debug_output(' (~6fs, ~2fcpu, ~D inferences) ~n', [ElapsedTime, CpuTime, Inferences])                    
+                    ansi_format([], '[~w]  ~|', [ThreadId]),
+                    ansi_format([fg(Colour), bold], 'Number of rows affected: ', []),
+                    ansi_format([], '~w~n', [N]),
+                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                                    
                 ; Outputs = identity(N)->
-                    show_debug_output('~AIdentity of inserted row~A: ~w~n', [[foreground-Colour, bold-on], {reset}, N]),
-                    show_debug_output(' (~6fs, ~2fcpu, ~D inferences) ~n', [ElapsedTime, CpuTime, Inferences])                    
+                    ansi_format([], '[~w]  ~|', [ThreadId]),
+                    ansi_format([fg(Colour), bold], 'Identity of inserted row: ', []),
+                    ansi_format([], '~w~n', [N]),
+                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                                    
                 ; otherwise ->
                     selection_results(Outputs, Results),
                     atomic_list_concat(Results, '\n        ', Debug),
-                    show_debug_output('~AResult~A: ~w~n', [[foreground-Colour, bold-on], {reset}, Debug]),
-                    show_debug_output(' (~6fs, ~2fcpu, ~D inferences) ~n', [ElapsedTime, CpuTime, Inferences])
+                    ansi_format([], '[~w]  ~|', [ThreadId]),
+                    ansi_format([fg(Colour), bold], 'Result: ', []),
+                    ansi_format([], '~w~n', [Debug]),
+                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
                 )
             )
         
         ; Port == fail ->
             ( Mode == minimal ->
-                show_debug_output('[~w]  ~|~A~w~A ~w', [ThreadId, [foreground-Colour, bold-on], PortName, {reset}, HumanSql])
-            
+                ansi_format([], '[~w]  ~|', [ThreadId]),
+                ansi_format([fg(Colour), bold], '~w', [PortName]),
+                ansi_format([], '~w', [HumanSql])
             ; otherwise ->
-                show_debug_output('[~w]  ~|~A~w~A', [ThreadId, [foreground-Colour, bold-on], PortName, {reset}])
+                ansi_format([], '[~w]  ~|', [ThreadId]),
+                ansi_format([fg(Colour), bold], '~w', [PortName])                
             ),
-            show_debug_output(' (~6fs, ~2fcpu, ~D inferences) ~n', [ElapsedTime, CpuTime, Inferences])
+            ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
 
         ).
 
@@ -8078,11 +8068,10 @@ dbms_normalize_name(Schema, Input, Mapped):-
         ).
 
 % default_schema/1 needs to be defined by the application
-user:term_expansion(:-cql_option(default_schema(Schema)), cql:default_schema(Schema)):-
-        writeln(setting_default_schema).
+:-multifile(cql:default_schema/1).
+user:term_expansion(:-cql_option(default_schema(Schema)), cql:default_schema(Schema)).
 
-user:term_expansion(:-cql_option(max_db_connections(N)), cql_database:max_db_connections_hook(N)):-
-        writeln(setting_max).
+user:term_expansion(:-cql_option(max_db_connections(N)), cql_database:max_db_connections_hook(N)).
 
 %%      statistic_monitored_attribute(+Schema, +TableName, +ColumnName).
 :-multifile(cql_statistic_monitored_attribute_hook/3).
@@ -8173,24 +8162,6 @@ cql_log(Targets, Level, Format, Args):-
             debug(cql(logging), Format, Args)
         ).
 
-% FIXME: Clean up everything below this line
-
-accurate_wall_clock_time(T):- get_time(T).
-throw_exception(ErrorId, Format, Args):-
-        format(atom(Message), Format, Args),
-        throw(cql_error(ErrorId, Message)).
-throw_exception(ErrorId, Message):-
-        throw(cql_error(ErrorId, Message)).
-
-atom_to_rational(Atom, Rational):-
-        atom_to_term(Atom, X, _),
-        Rational is rationalize(X).
-show_debug_output(Format, Args):-
-        format(Format, Args).
-console(Format, Args):-
-        format(Format, Args).
-event_log(_, Format, Args):-
-        format(Format, Args).
 
 %%      attribute_domain(+Schema, +TableName, +ColumnName, -Domain).
 attribute_domain(Schema, TableName, ColumnName, Domain):-
@@ -8275,6 +8246,21 @@ port_label(fail,               'FAIL  ', magenta).
 port_label(exception,          'ERROR ', red).
 port_label(external_exception, 'ERROR ', red).
 
+
+% FIXME: Clean up everything below this line
+
+accurate_wall_clock_time(T):- get_time(T).
+throw_exception(ErrorId, Format, Args):-
+        format(atom(Message), Format, Args),
+        throw(cql_error(ErrorId, Message)).
+throw_exception(ErrorId, Message):-
+        throw(cql_error(ErrorId, Message)).
+
+atom_to_rational(Atom, Rational):-
+        atom_to_term(Atom, X, _),
+        Rational is rationalize(X).
+
+
 get_host_name(X):- gethostname(X).
 
 % FIXME: These should all not be necessary!
@@ -8282,7 +8268,6 @@ sql_gripe_exempt_module(_).
 t7_to_unambiguous_atom(t7(Y, M, D, H, Min, S, Ms), Atom):-
         format(atom(Atom), '~`0t~w~4+-~`0t~w~3+-~`0t~w~3+ ~`0t~w~3+:~`0t~w~3+:~`0t~w~3+.~`0t~w~4+', [Y, M, D, H, Min, S, Ms]).
 
-primary_schema(X):- default_schema(X).
 domain_allowed_value(_, _).
 entity_name_module_file_base_name(_, _, _).
 event_notification_table(_, _):- fail.
