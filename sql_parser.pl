@@ -133,6 +133,9 @@ Because we have truncation, the order of operations is crucial: Although (x * y)
 :-op(100, fx, ??).
 :-op(1200, xfx, --->).
 
+:-use_module(library(chr)).
+:-use_module(library(dcg/basics)).
+
 :-chr_option(line_numbers, on).
 :-chr_option(check_guard_bindings, error).
 :-chr_option(debug, off).

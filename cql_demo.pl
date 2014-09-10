@@ -50,13 +50,36 @@
 % CREATE TABLE cql_table_2(cql_table_2_pk SERIAL PRIMARY KEY, varchar_column varchar(30), decimal_column DECIMAL(30,10))
 :-module(cql_demo, [demo/0]).
 
-% Need to register a driver_string/1 (or a dsn(DSN, Username, Password) term). Not sure if there is a less obtrusive way to do this?
-%:-initialization(register_database_connection_details(seattle, driver_string('Driver={PostgreSQL};Database=cql_demo;UID=matt;PWD=NeemowirpIc2;')), now).
-:-initialization(register_database_connection_details(seattle, driver_string('Driver={Sqlite3};Database=/tmp/cql.db')), now).
-% This is defined in cql_api.pl and uses term_expansion to create the necessary clauses to drive the compiler. We do this in reverse - keep the metadata
+:-use_module(library(cql/cql)).
+:-cql_option(default_schema(seattle)).
+:-cql_option(max_db_connections(10)).
+
+% This is defined in cql_autoschema.pl and uses term_expansion to create the necessary clauses to drive the compiler. We do this in reverse - keep the metadata
 % in code as facts, and have code to make the database we connect to conform. This allows us to keep the schema under source control. For a quick demo, though
 % the auto-schema is probably more convenient.
+
+:-use_module(library(cql/cql_autoschema)).
+% Need to register a driver_string/1 (or a dsn(DSN, Username, Password) term). Not sure if there is a less obtrusive way to do this?
+:-initialization(register_database_connection_details(seattle, driver_string('Driver={Sqlite3};Database=/tmp/cql.db')), now).
 :-build_schema(seattle).
+
+
+cql:application_value_to_odbc_value_hook(Type, _, _, _, _, Rational, Atom):-
+        writeln(hook(Type)),
+        Type = decimal(_,S),
+        format(atom(Atom), '~*f', [S, Rational]),
+        writeln(rational=Atom).
+
+cql:odbc_value_to_application_value_hook(decimal(_,_), _, _, _, _, Value, Rational):-
+        ( atom_prefix(Value, '.') ->
+            atom_concat('0', Value, NumericAtom)      
+        ; atom_concat('-.', Rest, Value) ->
+            atom_concat('-0.', Rest, NumericAtom)     
+        ; otherwise ->
+            NumericAtom = Value
+        ),      
+        atom_to_rational(NumericAtom, Rational).
+
 
 % Also note that the empty list is a legacy of CQLv1. Ultimately I would like to change {[], .....} to be just {....}.
 % For now, we are in a hurry, so it will have to stick around.

@@ -42,6 +42,7 @@
 :-module(cql,
          [
           cql_execute/1,
+          cql_data_type/10,
           cql_get_module_default_schema/2,
           cql_goal_expansion/3,
           cql_identity/3,
@@ -57,11 +58,44 @@
           cql_state_change_statistics_sql/8,
           cql_statement_location/2,
           cql_temporary_column_name/4,
+          cql_log/4,
+          odbc_execute_with_statistics/4,
+          access_token_to_user_id/2,
+          atom_to_rational/2,
+          dbms/2,
+          odbc_data_type/4,
+          primary_key_column_name/3,
+          database_attribute/8,
+          database_domain/2,
+          routine_return_type/3,
+          database_constraint/4,
           in_line_format/4,
-          row_count/2
+          row_count/2,
+          op(400, xfy, (::)),
+          op(900, fy,  exists),
+          op(750, yfx, *==),
+          op(750, yfx, =*=),
+          op(750, yfx, ==*),
+          op(740, yfx, on),
+          op(700, xfx, =~),
+          op(700, xfx, \=~),
+          op(200, fy, #),
+          op(920, fy, ???),
+          op(920, fy, ??),
+          op(920, fy, ?)
 	  ]).
 
 :-license(swipl).
+
+:-use_module(library(chr)).
+:-use_module(library(dcg/basics)).
+:-use_module(library(cql/sql_parser)).
+:-use_module(library(cql/sql_tokenizer)).
+:-use_module(library(cql/sql_write)).
+:-use_module(library(cql/sql_keywords)).
+:-use_module(library(cql/cql_database)).
+
+:-reexport([cql_database]).
 
 /** <module> CQL - Constraint Query Language 
 
@@ -1106,7 +1140,7 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 :-chr_constraint number_of_rows_affected(-'QueryId', +'Connection', ?'N').
 
 :-chr_constraint odbc_select_disjunction(?'Goal').
-:-chr_meta_predicate(odbc_select_disjunction(0)).
+%:-chr_meta_predicate(odbc_select_disjunction(0)).
 
 :-chr_constraint odbc_select_statement(+'Schema', +'SqlToken', ?list('OdbcParameter'), ?list('Output')).
 :-chr_constraint on(-'Join', ?'Resolved', ?'On').
@@ -1198,6 +1232,21 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 :-chr_constraint write_sql(-'QueryId', ?'CompilationInstruction',  +'Disposition', +list('SqlToken'), ?'Tail', ?list('OdbcParameter'), ?list('Output')).
 :-chr_constraint write_update_attribute(-'QueryId', ?'TableAlias', +'AttributeName', ?'ApplicationValue').
 :-chr_constraint write_update_attributes(-'QueryId', ?'TableAlias', ?list('AttributeNameValuePair')).
+
+
+:-op(400, xfy, (::)).            % CQL
+:-op(900, fy,  exists).          % CQL
+:-op(750, yfx, *==).             % CQL
+:-op(750, yfx, =*=).             % CQL
+:-op(750, yfx, ==*).             % CQL
+:-op(740, yfx, on).              % CQL
+:-op(700, xfx, =~).              % CQL (LIKE)
+:-op(700, xfx, \=~).             % CQL (NOT LIKE)
+:-op(200, fy, #).                % CQL (nolock)
+:-op(920, fy, ???).              % Debugging
+:-op(920, fy, ??).               % Debugging
+:-op(920, fy, ?).                % Debugging
+
 
 
 %%      cql_set_module_default_schema(+Schema).
@@ -2361,7 +2410,7 @@ check_aggregation_attribute @
         select_binding(QueryId, aggregation(_), attribute(Schema, TableAlias, AttributeName), _),
         query_table_alias(QueryId, _, TableName, TableAlias)
         <=>
-        \+ get_data_type(Schema, TableName, AttributeName, _, _, _, _, _, _, _)
+        \+ cql_data_type(Schema, TableName, AttributeName, _, _, _, _, _, _, _)
         |
         throw(format('Unknown SELECT attribute in CQL: ~w', [Schema:TableName:AttributeName])).
 
@@ -2404,7 +2453,7 @@ uniqueness @
         true.
 
 get_data_size(Schema, TableName, AttributeName, Size):-
-        get_data_type(Schema, TableName, AttributeName, _, CharacterMaximumLength, _, _, _, _, _),
+        cql_data_type(Schema, TableName, AttributeName, _, CharacterMaximumLength, _, _, _, _, _),
         ( CharacterMaximumLength == max ->
             % This should be close enough. It just has to be larger than any declared column length, and the max there is 8192 for SQL Server.
             % For all other DBMS it doesnt matter
@@ -2915,7 +2964,7 @@ add_to_restriction_tree @
 insert_inserted_ @
         insert(QueryId, Schema, TableName, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, inserted_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, inserted_, _, _, _, _, _, _, _),
         \+ memberchk(inserted_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [inserted_-{timestamp}|AttributeNameValuePairs]).
@@ -2924,7 +2973,7 @@ insert_inserted_ @
 insert_inserted_by_ @
         insert(QueryId, Schema, TableName, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, inserted_by_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, inserted_by_, _, _, _, _, _, _, _),
         \+ memberchk(inserted_by_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [inserted_by_-{user_id}|AttributeNameValuePairs]).
@@ -2933,7 +2982,7 @@ insert_inserted_by_ @
 insert_updated_ @
         insert(QueryId, Schema, TableName, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, updated_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, updated_, _, _, _, _, _, _, _),
         \+ memberchk(updated_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [updated_-{timestamp}|AttributeNameValuePairs]).
@@ -2942,7 +2991,7 @@ insert_updated_ @
 insert_updated_by_ @
         insert(QueryId, Schema, TableName, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, updated_by_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, updated_by_, _, _, _, _, _, _, _),
         \+ memberchk(updated_by_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [updated_by_-{user_id}|AttributeNameValuePairs]).
@@ -2951,7 +3000,7 @@ insert_updated_by_ @
 update_updated_ @
         update(QueryId, Schema, TableName, TableAlias, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, updated_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, updated_, _, _, _, _, _, _, _),
         \+ memberchk(updated_-_, AttributeNameValuePairs)
         |
         update(QueryId, Schema, TableName, TableAlias, [updated_-{timestamp}|AttributeNameValuePairs]).
@@ -2960,7 +3009,7 @@ update_updated_ @
 update_updated_by_ @
         update(QueryId, Schema, TableName, TableAlias, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, updated_by_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, updated_by_, _, _, _, _, _, _, _),
         \+ memberchk(updated_by_-_, AttributeNameValuePairs)
         |
         update(QueryId, Schema, TableName, TableAlias, [updated_by_-{user_id}|AttributeNameValuePairs]).
@@ -2969,7 +3018,7 @@ update_updated_by_ @
 insert_transaction_id_ @
         insert(QueryId, Schema, TableName, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, transaction_id_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, transaction_id_, _, _, _, _, _, _, _),
         \+ memberchk(transaction_id_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [transaction_id_-{transaction_id}|AttributeNameValuePairs]).
@@ -2978,7 +3027,7 @@ insert_transaction_id_ @
 update_transaction_id_ @
         update(QueryId, Schema, TableName, TableAlias, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, transaction_id_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, transaction_id_, _, _, _, _, _, _, _),
         \+ memberchk(transaction_id_-_, AttributeNameValuePairs)
         |
         update(QueryId, Schema, TableName, TableAlias, [transaction_id_-{transaction_id}|AttributeNameValuePairs]).
@@ -2987,7 +3036,7 @@ update_transaction_id_ @
 insert_generation_ @
         insert(QueryId, Schema, TableName, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, generation_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, generation_, _, _, _, _, _, _, _),
         \+ memberchk(generation_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [generation_-0|AttributeNameValuePairs]).
@@ -2996,7 +3045,7 @@ insert_generation_ @
 update_generation_ @
         update(QueryId, Schema, TableName, TableAlias, AttributeNameValuePairs)
         <=>
-        get_data_type(Schema, TableName, generation_, _, _, _, _, _, _, _),
+        cql_data_type(Schema, TableName, generation_, _, _, _, _, _, _, _),
         \+ memberchk(generation_-_, AttributeNameValuePairs)
         |
         update(QueryId, Schema, TableName, TableAlias, [generation_-{increment}|AttributeNameValuePairs]).
@@ -5441,7 +5490,7 @@ identity_sql_server @
             Identity = ScopeIdentity,
             get_transaction_context(TransactionId, _, AccessToken, _, _),
             access_token_to_user_id(AccessToken, UserId),
-            advise([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
+            cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
             throw_exception(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity])
         ).
@@ -5459,7 +5508,7 @@ identity_sqlite @
             Identity = ScopeIdentity,
             get_transaction_context(TransactionId, _, AccessToken, _, _),
             access_token_to_user_id(AccessToken, UserId),
-            advise([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
+            cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
             throw_exception(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity])
         ).
@@ -5832,7 +5881,7 @@ execute_state_change_query @
                                 ),
                                 ( Result = affected(N) ->
                                     number_of_rows_affected(QueryId, Connection, N),
-                                    advise([], informational, 'CQL\t~w\t~w\t   ~w row(s) affected\t(~w:~w)', [UserId, TransactionId, N, FileName, LineNumber]),
+                                    cql_log([], informational, 'CQL\t~w\t~w\t   ~w row(s) affected\t(~w:~w)', [UserId, TransactionId, N, FileName, LineNumber]),
                                     ( N > 0 ->
                                         identify_insert_row(StateChangeType, QueryId, Schema, TableName, Connection, Identity),
                                         ( StateChangeType == insert->
@@ -5850,7 +5899,7 @@ execute_state_change_query @
                                     postgres_identity(QueryId, Identity),
                                     identify_insert_row(StateChangeType, QueryId, Schema, TableName, Connection, _),
                                     number_of_rows_affected(QueryId, Connection, 1),
-                                    advise([], informational, 'CQL\t~w\t~w\t   Row inserted. Identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber]),
+                                    cql_log([], informational, 'CQL\t~w\t~w\t   Row inserted. Identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber]),
                                     identify_post_state_change_values(QueryId, Connection),
                                     call_row_change_hooks(QueryId, Connection),
                                     DebugResult = identity(Identity)
@@ -6468,7 +6517,7 @@ check_attribute_3 @
        attribute_to_check(Schema, TableName, AttributeName-_)
        <=>
        atom(AttributeName),   % Don't care about aggregations for this test
-       \+ get_data_type(Schema, TableName, AttributeName, _, _, _, _, _, _, _)
+       \+ cql_data_type(Schema, TableName, AttributeName, _, _, _, _, _, _, _)
        |
        throw(format('Unknown attribute in CQL attribute list: ~w', [Schema:TableName:AttributeName])).
 
@@ -6502,7 +6551,7 @@ log_select @
         embed_odbc_inputs(CqlAtoms, OdbcInputs, SqlAtoms, []),
         atomic_list_concat(SqlAtoms, SqlWithEmbeddedInputs)
         |
-        advise([],
+        cql_log([],
                informational,
                'CQL\t\t~w\t(~w:~w)',
                [SqlWithEmbeddedInputs, FileName, LineNumber]).
@@ -6553,7 +6602,7 @@ log_state_change @
         <=>
         get_transaction_context(TransactionId, _, AccessToken, _, _),
         access_token_to_user_id(AccessToken, UserId),
-        advise([],
+        cql_log([],
                informational,
                'CQL\t~w\t~w\t   ~w\t~q\t(~w:~w)',
                [UserId, TransactionId, Sql, OdbcInputs, FileName, LineNumber]).
@@ -6909,7 +6958,7 @@ odbc_parameters_for_state_change([odbc_parameter(Schema, TableName, AttributeNam
         ; primary_key_column_name(Schema, TableName, AttributeName)
         ), !,
       
-        get_data_type(Schema, TableName, AttributeName, _, CharacterMaximumLength, _, _, _, _, _),            
+        cql_data_type(Schema, TableName, AttributeName, _, CharacterMaximumLength, _, _, _, _, _),            
       
         % Get this so we can select longest fields last and so avoid the INVALID DESCRIPTOR INDEX bug
         ( integer(CharacterMaximumLength) ->
@@ -7161,7 +7210,7 @@ call_history_hook @
                                   Connection,
                                   Goal),
                      E,
-                     advise([], error, 'Error in history hook: ~p', [E]))),
+                     cql_log([], error, 'Error in history hook: ~p', [E]))),
       
         fail
         ;
@@ -7968,6 +8017,310 @@ cql_var_check(Var):-
         ; otherwise->
             throw(uninstantiation_error(Var))
         ).
+
+
+
+duplicates(List, SortedDuplicates):-
+        msort(List, SortedList),
+        duplicates(SortedList, [], Duplicates),
+        sort(Duplicates, SortedDuplicates).
+
+duplicates([], Duplicates, Duplicates) :- !.
+duplicates([_], Duplicates, Duplicates) :- !.
+duplicates([A, B|T1], Duplicates, T2) :-
+        A == B,
+        !,
+        ( memberchk(A, Duplicates) ->
+            duplicates(T1, Duplicates, T2)
+        ; otherwise->
+            duplicates(T1, [A|Duplicates], T2)
+        ).
+duplicates([_|T1], Duplicates, T2) :-
+        duplicates(T1, Duplicates, T2).
+
+
+map_database_atom(Keyword, Mapped):-
+        reserved_sql_keyword(Keyword), !,
+        format(atom(Mapped), '"~w"', [Keyword]).
+map_database_atom(Atom, Atom).
+
+strip_sort_keys([], []).
+strip_sort_keys([_-Detail|T1], [Detail|T2]) :-
+        strip_sort_keys(T1, T2).
+
+path_arg([], Term, Term).
+path_arg([Index|Indices], Term, SubTerm) :-
+        compound(Term),
+	arg(Index, Term, Arg),
+	path_arg(Indices, Arg, SubTerm).
+
+
+
+:-multifile(cql_access_token_hook/2).
+access_token_to_user_id(X, Y):-
+        ( cql_access_token_hook(X, Y)->
+            true
+        ; otherwise->
+            Y = X
+        ).
+
+% If log_selects succeeds, selects will be logged via cql_log/4.
+:-multifile(log_selects/0).
+
+%%      dbms_normalize_name(+DBMS, +Name, -NormalizedName).
+%       Normalize a name which is potentially longer than the DBMS allows to a unique truncation
+:-multifile(cql_dbms_atom_normalization_hook/3).
+dbms_normalize_name(Schema, Input, Mapped):-
+        ( cql_dbms_atom_normalization_hook(Schema, Input, Mapped)->
+            true
+        ; otherwise->
+            Mapped = Input
+        ).
+
+% default_schema/1 needs to be defined by the application
+user:term_expansion(:-cql_option(default_schema(Schema)), cql:default_schema(Schema)):-
+        writeln(setting_default_schema).
+
+user:term_expansion(:-cql_option(max_db_connections(N)), cql_database:max_db_connections_hook(N)):-
+        writeln(setting_max).
+
+%%      statistic_monitored_attribute(+Schema, +TableName, +ColumnName).
+:-multifile(cql_statistic_monitored_attribute_hook/3).
+statistic_monitored_attribute(Schema, TableName, ColumnName):-        
+        cql_statistic_monitored_attribute_hook(Schema, TableName, ColumnName).
+
+%%      statistic_monitored_attribute_change(+Schema, +TableName, +ColumnName, +Value, +Delta).
+%       Called when a statistic_monitored_attribute changes.
+%       Delta is the (signed) change in the number of rows in the table where TableName.ColumnName == Value
+:-multifile(cql_statistic_monitored_attribute_change_hook/5).
+statistic_monitored_attribute_change(Schema, TableName, ColumnName, Value, Delta):-
+        ignore(cql_statistic_monitored_attribute_change_hook(Schema, TableName, ColumnName, Value, Delta)).
+
+%%      dbms(+Schema, -DBMSName).
+%       Determine the DBMS for a given Schema.
+%       Can be autoconfigured.
+dbms(Schema, DBMS):-
+        cql_metadata:dbms(Schema, DBMS).
+
+%%      odbc_data_type(+Schema, +TableSpec, +ColumnName, ?OdbcDataType)
+%       OdbcDataType must be a native SQL datatype, such as varchar(30) or decimal(10, 5)
+%       Can be autoconfigured.
+odbc_data_type(Schema, TableSpec, ColumnName, OdbcDataType):-
+        cql_metadata:odbc_data_type(Schema, TableSpec, ColumnName, OdbcDataType).
+
+%%      primary_key_column_name(+Schema, +TableName, -PrimaryKeyAttributeName).
+%       Can be autoconfigured.
+primary_key_column_name(Schema, TableName, PrimaryKeyAttributeName):-
+        cql_metadata:primary_key_column_name(Schema, TableName, PrimaryKeyAttributeName).
+
+%%      database_attribute(?EntityType:table/view, ?Schema:atom, ?EntityName:atom, ?ColumnName:atom, ?DomainOrNativeType:atom, ?AllowsNulls:allows_nulls(true/false), ?IsIdentity:is_identity(true/false), ?ColumnDefault) is nondet.
+%       Can be autoconfigured.
+database_attribute(EntityType, Schema, EntityName, ColumnName, DomainOrNativeType, AllowsNulls, IsIdentity, ColumnDefault):-
+        cql_metadata:database_attribute(EntityType, Schema, EntityName, ColumnName, DomainOrNativeType, AllowsNulls, IsIdentity, ColumnDefault).
+
+%%      database_attribute(?DomainName:atom, ?OdbcDataType) is nondet.
+%       Can be autoconfigured.
+database_domain(DomainName, OdbcDataType):-
+        cql_metadata:database_domain(DomainName, OdbcDataType).
+
+%%      routine_return_type(?Schema:atom, ?EntityName:atom, ?OdbcType).
+%       Can be autoconfigured
+routine_return_type(Schema, EntityName, OdbcType):-
+        cql_metadata:routine_return_type(Schema, EntityName, OdbcType).
+
+%%      database_constraint(?Schema:atom, ?EntityName:atom, ?ConstraintName:atom, ?Constraint) is nondet.
+%       Constraint is one of:
+%          * primary_key(ColumnNames:list)
+%          * foreign_key(ForeignTableName:atom, ForeignColumnNames:list, ColumnNames:list)
+%          * unique(ColumnNames:list)
+%          * check(CheckClause)
+%       In theory this can be autoconfigured too, but I have not written the code for it yet
+database_constraint(Schema, EntityName, ConstraintName, Constraint):-
+        cql_metadata:database_constraint(Schema, EntityName, ConstraintName, Constraint).
+
+user:goal_expansion(Schema:{Cql}, GoalExpansion) :-
+        atom(Schema),
+        !,
+        cql_goal_expansion(Schema, Cql, GoalExpansion).
+
+user:goal_expansion({Cql}, GoalExpansion) :- !,
+        default_schema(Schema),
+        cql_goal_expansion(Schema, Cql, GoalExpansion).
+
+user:goal_expansion(?(Goal), cql_show(Goal, minimal)):-
+        nonvar(Goal),
+        ( Goal = {_} ; Goal = _:{_} ).
+user:goal_expansion(??(Goal), cql_show(Goal, explicit)):-
+        nonvar(Goal),
+        ( Goal = {_} ; Goal = _:{_} ).
+user:goal_expansion(???(Goal), cql_show(Goal, full)):-
+        nonvar(Goal),
+        ( Goal = {_} ; Goal = _:{_} ).
+
+:-multifile(cql_execution_hook/4).
+odbc_execute_with_statistics(Statement, OdbcParameters, OdbcParameterDataTypes, Row):-
+        ( cql_execution_hook(Statement, OdbcParameters, OdbcParameterDataTypes, Row) *->
+            true
+        ; otherwise->
+            odbc_execute(Statement, OdbcParameters, Row)
+        ).
+
+:-multifile(cql_log_hook/4).
+cql_log(Targets, Level, Format, Args):-
+        ( cql_log_hook(Targets, Level, Format, Args)->
+            true
+        ; otherwise->
+            debug(cql(logging), Format, Args)
+        ).
+
+% FIXME: Clean up everything below this line
+
+accurate_wall_clock_time(T):- get_time(T).
+throw_exception(ErrorId, Format, Args):-
+        format(atom(Message), Format, Args),
+        throw(cql_error(ErrorId, Message)).
+throw_exception(ErrorId, Message):-
+        throw(cql_error(ErrorId, Message)).
+
+atom_to_rational(Atom, Rational):-
+        atom_to_term(Atom, X, _),
+        Rational is rationalize(X).
+show_debug_output(Format, Args):-
+        format(Format, Args).
+console(Format, Args):-
+        format(Format, Args).
+event_log(_, Format, Args):-
+        format(Format, Args).
+
+%%      attribute_domain(+Schema, +TableName, +ColumnName, -Domain).
+attribute_domain(Schema, TableName, ColumnName, Domain):-
+        odbc_data_type(Schema, TableName, ColumnName, Domain).
+
+%%      database_identity(?Schema:atom, ?EntityName:atom, ?ColumnName:atom)
+database_identity(Schema, EntityName, ColumnName) :-
+        database_attribute(_, Schema, EntityName, ColumnName, _, _, is_identity(true), _).
+
+domain_database_data_type(Domain, Type) :-
+        checked_domain(Domain, _, _, _, _, _, Type).
+
+
+%%      database_key(?Schema:atom, ?EntityName:atom, ?ConstraintName:atom, ?KeyColumnNames:list, ?KeyType)
+%
+%       @param KeyColumnNames list of _|atom|_ in database-supplied order
+%       @param KeyType _|identity|_ ; _|'primary key'|_ ; _|unique|_
+
+database_key(Schema, EntityName, ConstraintName, KeyColumnNames, 'primary key') :-
+        database_constraint(Schema, EntityName, ConstraintName, primary_key(KeyColumnNames)).
+
+database_key(Schema, EntityName, ConstraintName, KeyColumnNames, unique) :-
+        database_constraint(Schema, EntityName, ConstraintName, unique(KeyColumnNames)).
+        
+database_key(Schema, EntityName, identity, [ColumnName], identity) :-
+        database_identity(Schema, EntityName, ColumnName).
+
+checked_domain(Domain, _, _, _, _, _, DataType):-
+        database_domain(Domain, DataType).
+
+
+
+cql_data_type(Schema,                                          % +
+              TableSpec,                                       % +
+              ColumnName,                                      % ?
+              DatabaseDataType,                                % ?
+              CharacterMaximumLength,                          % ?
+              NumericPrecision,                                % ?
+              NumericScale,                                    % ?
+              Domain,                                          % ?
+              OrdinalPosition,                                 % ?
+              Nullability) :-
+        cached_data_type(Schema,
+                           TableSpec,
+                           ColumnName,
+                           DatabaseDataType,
+                           CharacterMaximumLength,
+                           NumericPrecision,
+                           NumericScale,
+                           Domain,
+                           OrdinalPosition,
+                           Nullability,
+                           _,    % IsIdentity
+                           _).
+        
+cached_data_type(Schema, EntityName, ColumnName, DatabaseDataType, MaximumLength, NumericPrecision, NumericScale, Domain, _, boolean(AllowsNullsTrueFalse), boolean(IsIdentityTrueFalse), ColumnDefault) :-
+        database_attribute(_, Schema, EntityName, ColumnName, domain(Domain), allows_nulls(AllowsNullsTrueFalse), is_identity(IsIdentityTrueFalse), ColumnDefault),
+        checked_domain(Domain, _, _, _, _, _, DataType),
+        data_type_length_precision_scale(DataType, DatabaseDataType, MaximumLength, NumericPrecision, NumericScale).
+
+cached_data_type(Schema, EntityName, ColumnName, DatabaseDataType, MaximumLength, NumericPrecision, NumericScale, {null}, _, boolean(AllowsNullsTrueFalse), boolean(IsIdentityTrueFalse), ColumnDefault) :-
+        database_attribute(_, Schema, EntityName, ColumnName, native_type(DataType), allows_nulls(AllowsNullsTrueFalse), is_identity(IsIdentityTrueFalse), ColumnDefault),
+        data_type_length_precision_scale(DataType, DatabaseDataType, MaximumLength, NumericPrecision, NumericScale).
+
+data_type_length_precision_scale(DataType, DatabaseDataType, MaximumLength, NumericPrecision, NumericScale) :-
+        once(data_type_length_precision_scale_1(DataType, DatabaseDataType, MaximumLength, NumericPrecision, NumericScale)).
+
+data_type_length_precision_scale_1(varchar(MaximumLength), varchar, MaximumLength, {null}, {null}).
+data_type_length_precision_scale_1(nvarchar(MaximumLength), nvarchar, MaximumLength, {null}, {null}).
+data_type_length_precision_scale_1(varbinary(MaximumLength), varbinary, MaximumLength, {null}, {null}).
+data_type_length_precision_scale_1(decimal(NumericPrecision, NumericScale), decimal, {null}, NumericPrecision, NumericScale).
+data_type_length_precision_scale_1(int, integer, 10, {null}, {null}).
+data_type_length_precision_scale_1(DataType, DataType, {null}, {null}, {null}).
+
+
+port_label(unify,              'CALL  ', green).
+port_label(call,               'CALL  ', cyan).
+port_label(pending,            'EXIT  ', yellow).
+port_label(exit,               'EXIT  ', white).
+port_label(!,                  'EXIT !', white).
+port_label(fail,               'FAIL  ', magenta).
+port_label(exception,          'ERROR ', red).
+port_label(external_exception, 'ERROR ', red).
+
+get_host_name(X):- gethostname(X).
+
+% FIXME: These should all not be necessary!
+sql_gripe_exempt_module(_).
+t7_to_unambiguous_atom(t7(Y, M, D, H, Min, S, Ms), Atom):-
+        format(atom(Atom), '~`0t~w~4+-~`0t~w~3+-~`0t~w~3+ ~`0t~w~3+:~`0t~w~3+:~`0t~w~3+.~`0t~w~4+', [Y, M, D, H, Min, S, Ms]).
+
+primary_schema(X):- default_schema(X).
+domain_allowed_value(_, _).
+entity_name_module_file_base_name(_, _, _).
+event_notification_table(_, _):- fail.
+history_attribute(_, _, _):- fail.
+suggest_indices(_).
+is_a(Var,var):- var(Var), !.
+is_a(Atom,atom):- atom(Atom), !.
+is_a(Atom,integer):- integer(Atom), !.
+is_a(Atom,rational):- rational(Atom), !.
+is_a(Atom,t7):- \+var(Atom), Atom = t7(_,_,_,_,_,_,_), !.
+is_a(Atom,boolean):- \+var(Atom), Atom = boolean(X), (X == true ; X == false), !.
+is_a(Atom, null):- \+var(Atom), Atom == {null}.
+
+t7_now(t7(Y, M, D, HH, MM, SS, NN)):-
+        get_time(X),
+        stamp_date_time(X, date(Y,M,D,HH,MM,S,_,_,_), local),
+        NN is round(float_fractional_part(S) * 1000),
+        SS is integer(float_integer_part(S)).
+
+??(Goal):-
+        setup_call_catcher_cleanup(format('CALL  ~q~n', [Goal]),
+                                   Goal,
+                                   Catcher,
+                                   ( Catcher == ! ->
+                                       format('CUT   ~q~n', [Goal])
+                                   ; Catcher == fail->
+                                       format('FAIL  ~q~n', [Goal])
+                                   ; Catcher == exit->
+                                       format('EXIT  ~q~n', [Goal])
+                                   ; Catcher = error(E)->
+                                       format('ERROR  ~q~n~w~n', [E])
+                                   )),
+        ( var(Catcher)->
+            format('PEND  ~q~n', [Goal])
+        ; otherwise->
+            true
+        ).
+
 
 
 

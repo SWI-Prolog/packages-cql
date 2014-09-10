@@ -54,6 +54,8 @@
           update_history/16,
           odbc_cleanup_and_disconnect/1]).
 
+:-use_module(library(cql/cql)).
+
 :-dynamic
         database_connection_details/2.
 
@@ -85,6 +87,7 @@ get_transaction_context(TransactionId, TrxId, AccessToken, TransactionTimestamp,
         % odbc_connection_in_use(Schema)
         odbc_connection_in_use/1.
 
+:-multifile(cql_max_db_connections_hook/1).
 odbc_connection_call(Schema, Connection, Goal) :-
         ( retract(odbc_connection_available(Schema, Connection)) ->                       % Get a connection from the pool
             assert(odbc_connection_in_use(Schema)),
@@ -94,11 +97,14 @@ odbc_connection_call(Schema, Connection, Goal) :-
                                  retract(odbc_connection_in_use(Schema)),
                                  assert(odbc_connection_available(Schema, Connection))))  % Put connection back in the pool
         ; aggregate_all(r(count), odbc_connection_in_use(Schema), r(N)),
-          with_mutex(max_db_connections_mutex,
-                     max_db_connections(MaxDbConnections)),
+          ( cql_max_db_connections_hook(MaxDbConnections)->
+              true
+          ; otherwise->
+              MaxDbConnections = 10
+          ),
           N >= MaxDbConnections ->
             thread_self(ThreadId),
-            throw_exception(too_many_schema_connections, 'Maximum number of schema connections (~w) exceeded on thread ~w', [MaxDbConnections, ThreadId])
+            throw(too_many_schema_connections(MaxDbConnections, ThreadId))
         
         ; database_connection_details(Schema, ConnectionDetails) ->
             ( ConnectionDetails = driver_string(DriverString) ->
@@ -109,7 +115,7 @@ odbc_connection_call(Schema, Connection, Goal) :-
                 format(atom(DriverString), 'DSN=~w;UID=~w;PWD=~w;WSID=~w;', [Dsn, Username, Password, HostName])
 
             ; otherwise ->
-                throw_exception(invalid_connection_details, '~w', [ConnectionDetails])
+                throw(invalid_connection_details(ConnectionDetails))
             ),
         
             odbc_connect(-,
@@ -138,7 +144,7 @@ odbc_connection_call(Schema, Connection, Goal) :-
             odbc_connection_call(Schema, Connection, Goal)
         
         ; otherwise ->
-            throw_exception(no_database_connection_details, 'register_database_connection_details/2 not called?', [])
+            throw(no_database_connection_details)
         ).
 
 
@@ -301,7 +307,7 @@ cql_transaction(Schema, AccessToken, Goal):-
 
 cql_transaction_1(Schema, AccessToken, Goal, DatabaseEventsSet):-
         ( transaction_context(ExistingTransactionId, _, _, _) ->
-            throw_exception(database_transaction_already_in_progress, ExistingTransactionId)
+            throw(database_transaction_already_in_progress(ExistingTransactionId))
         ; otherwise -> 
             true
         ),
@@ -317,10 +323,10 @@ cql_transaction_2(Schema, AccessToken, Goal, DatabaseEventsSet) :-
                                ; dbms(Schema, 'SQLite') ->
                                    odbc_query(Connection, 'SELECT substr(u,1,8)||\'-\'||substr(u,9,4)||\'-4\'||substr(u,13,3)||\'-\'||v||substr(u,17,3)||\'-\'||substr(u,21,12) from (select lower(hex(randomblob(16))) as u, substr(\'89ab\',abs(random()) % 4 + 1, 1) as v)', row(TransactionId))
                                ; otherwise ->
-                                   throw_exception(no_dbms_for_schema, 'No DBMS for schema ~w', [Schema])
+                                   throw(no_dbms_for_schema(Schema))
                                ),
-                               t7_now(t7(Y, M, D, H, Min, S, Ms)),
-                               assert(transaction_context(TransactionId, AccessToken, t7(Y, M, D, H, Min, S, Ms), Connection)),
+                               get_time(ExecutionTime),
+                               assert(transaction_context(TransactionId, AccessToken, ExecutionTime, Connection)),
                                  
                                ( cql_transaction_3(Goal, Connection, TransactionId, AccessToken, DatabaseEventsSet) ->
                                    true
@@ -378,8 +384,8 @@ resolve_deadlock(Goal) :-
         between(1, MaximumDeadlockRetries, RetryCount),         % BTP for deadlock retry
         
         ( RetryCount >= MaximumDeadlockRetries ->
-            advise([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_FAILED\tCOULD NOT RESOLVE deadlock on thread \'~w\'.  Goal:  ~w', [ThreadId, Goal]),  
-            throw_exception(deadlock_retry_count_exceeded, 'The maximum of ~w attempts to resolve a database deadlock has been exceeded', [MaximumDeadlockRetries])
+            cql_log([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_FAILED\tCOULD NOT RESOLVE deadlock on thread \'~w\'.  Goal:  ~w', [ThreadId, Goal]),  
+            throw(deadlock_retry_count_exceeded(MaximumDeadlockRetries))
 
         ; RetryCount > 1 ->
             % Check if another transaction has completed.  Note complete means committed -or- rolled back
@@ -397,10 +403,10 @@ resolve_deadlock(Goal) :-
         ( Flag == no_other_transaction_completed ->
             Delay is ( 2 << RetryCount) / 1000.0,         % Exponential backoff up to 2.048s
             sleep(Delay),
-            advise([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_ATTEMPT\tRETRYING deadlocked transaction on thread \'~w\'(attempt ~w).  Initiated by EXPIRY of RANDOM WAIT of ~w seconds.', [ThreadId, RetryCount, Delay])
+            cql_log([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_ATTEMPT\tRETRYING deadlocked transaction on thread \'~w\'(attempt ~w).  Initiated by EXPIRY of RANDOM WAIT of ~w seconds.', [ThreadId, RetryCount, Delay])
 
         ; Flag == another_transaction_completed ->
-            advise([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_ATTEMPT\tRETRYING deadlocked transaction on thread \'~w\' (attempt ~w).  Initiated by COMPLETION of a TRANSACTION on another thread.', [ThreadId, RetryCount])
+            cql_log([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_ATTEMPT\tRETRYING deadlocked transaction on thread \'~w\' (attempt ~w).  Initiated by COMPLETION of a TRANSACTION on another thread.', [ThreadId, RetryCount])
         ; otherwise ->
             true
         ),
@@ -411,13 +417,13 @@ resolve_deadlock(Goal) :-
                      true
                   ),
                   error(odbc('40001', _, _), _),                  
-                  ( advise([debug(deadlocks)], warning, 'DEADLOCK_DETECTED\tThread \'~w\' selected as DEADLOCK VICTIM.  Goal:  ~w', [ThreadId, Goal]),
+                  ( cql_log([debug(deadlocks)], warning, 'DEADLOCK_DETECTED\tThread \'~w\' selected as DEADLOCK VICTIM.  Goal:  ~w', [ThreadId, Goal]),
                     retractall(database_transaction_query_info(ThreadId, _, _, _,_)),
                     retractall(transaction_context(_, _, _, _)),
                     retractall(database_event(_, _, _, _, _, _)),
                     fail)),
         ( RetryCount > 1 ->
-            advise([debug(deadlocks)], warning, 'DEADLOCK_RESOLVED\tdeadlocked transaction on thread \'~w\' RESOLVED (attempt ~w).', [ThreadId, RetryCount])
+            cql_log([debug(deadlocks)], warning, 'DEADLOCK_RESOLVED\tdeadlocked transaction on thread \'~w\' RESOLVED (attempt ~w).', [ThreadId, RetryCount])
         
         ; otherwise ->
             true
@@ -437,7 +443,7 @@ maximum_deadlock_retries(10).
 log_transaction_state(AccessToken, TransactionId, TransactionState) :-
         access_token_to_user_id(AccessToken, UserId),
         upcase_atom(TransactionState, TransactionStateUc),
-        advise([], informational, '\t~p\t~p\t~p', [UserId, TransactionId, TransactionStateUc]).
+        cql_log([], informational, '\t~p\t~p\t~p', [UserId, TransactionId, TransactionStateUc]).
 
 
 register_database_connection_details(Schema, ConnectionDetails) :-
@@ -450,10 +456,11 @@ update_history(Schema, TableName, AttributeName, PrimaryKeyAttributeName, Primar
 
 
 %%      application_value_to_odbc_value(+ApplicationValue, +OdbcDataType, +Schema, +TableName, +ColumnName, +Qualifiers, -OdbcValue).
+:-multifile(cql:application_value_to_odbc_value_hook/7).
 application_value_to_odbc_value(ApplicationValue, OdbcDataType, Schema, TableName, ColumnName, Qualifiers, OdbcValue):-        
         ( var(ApplicationValue)->
             throw(instantiation_error(ApplicationValue))
-        ; application_value_to_odbc_value_hook(ApplicationValue, OdbcDataType, Schema, TableName, ColumnName, Qualifiers, OdbcValue)->
+        ; cql:application_value_to_odbc_value_hook(OdbcDataType, Schema, TableName, ColumnName, Qualifiers, ApplicationValue, OdbcValue)->
             true
         ; otherwise->
             OdbcValue = ApplicationValue
@@ -464,10 +471,17 @@ odbc_numeric_precision_limit(27).
 
 
 %%      odbc_value_to_application_value(+Schema, +TableSpec, +ColumnName, +OdbcValue, ?ApplicationValue).
+:-multifile(cql:odbc_value_to_application_value_hook/7).
 odbc_value_to_application_value(Schema, TableSpec, ColumnName, OdbcValue, ApplicationValue):-
-        get_data_type(Schema, TableSpec, ColumnName, DatabaseDataType, _, _, _, Domain, _, _),
-        ( odbc_value_to_application_value_hook(DatabaseDataType, Schema, TableSpec, ColumnName, Domain, OdbcValue, ApplicationValue)->
+        cql_data_type(Schema, TableSpec, ColumnName, DatabaseDataType, _, _, _, Domain, _, _),
+        ( cql:odbc_value_to_application_value_hook(DatabaseDataType, Schema, TableSpec, ColumnName, Domain, OdbcValue, ApplicationValue)->
             true
         ; otherwise->
             ApplicationValue = OdbcValue
         ).
+
+% FIXME: What to do about this?
+catch_all(A, B, C):- catch(A, B, C).
+
+
+process_database_events(_).
