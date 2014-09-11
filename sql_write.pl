@@ -879,12 +879,12 @@ sql_write_term(datename(A,B), Indent, Options)-->
         ( {normalize_date_type(AA, Type)}->
             {true}
         ; {otherwise}->
-            {throw_exception(cannot_canonicalize_date_1, '~w is not mapped', [AA])}
+            {throw(cql_error(cannot_canonicalize_date_part, AA))}
         ),
         ( {Type == day_of_week} ->
             sql_emit_token('\'Day\'', [], literal, Options)
         ; {otherwise}->
-            {throw_exception(cannot_datename, 'No datename for ~w', [AA])}
+            {throw(cql_error(cannot_map_date_type, Type))}
         ),
         sql_end_comments(Comments, Indent, Options),
         sql_emit_token(')', [], punctuation, Options).
@@ -903,7 +903,7 @@ sql_write_term(datediff(A,B,C), Indent, Options)-->
         ( {normalize_date_type(AA, Type)}->
             {true}
         ; {otherwise}->
-            {throw_exception(cannot_canonicalize_date_2, '~w is not mapped', [AA])}
+            {throw(cql_error(cannot_canonicalize_date_part, AA))}
         ),
         ( {Type == day}->
             sql_emit_token('DATE_PART', [], function, Options),
@@ -1012,7 +1012,7 @@ sql_write_term(datediff(A,B,C), Indent, Options)-->
             sql_write_date(B, Indent, Options),
             sql_emit_token(')', [], punctuation, Options)
         ; {otherwise}->
-            {throw_exception(cannot_datediff, 'No datediff for ~w', [AA])}
+            {throw(cql_error(cannot_datediff, AA))}
         ),
         sql_end_comments(Comments, Indent, Options).
 

@@ -53,25 +53,28 @@
           cql_post_state_change_select_sql/4,
           cql_pre_state_change_select_sql/7,
           cql_runtime/7,
+          cql_update_history_hook/16,          
           cql_set_module_default_schema/1,
           cql_show/2,
           cql_state_change_statistics_sql/8,
           cql_statement_location/2,
           cql_temporary_column_name/4,
           cql_log/4,
+          cql_history_attribute/3,
           default_schema/1,
           odbc_execute_with_statistics/4,
           access_token_to_user_id/2,
-          atom_to_rational/2,
           dbms/2,
           odbc_data_type/4,
           primary_key_column_name/3,
+          domain_database_data_type/2,
           database_attribute/8,
           database_domain/2,
           routine_return_type/3,
           database_constraint/4,
           in_line_format/4,
           row_count/2,
+          sql_gripe/3,
           op(400, xfy, (::)),
           op(900, fy,  exists),
           op(750, yfx, *==),
@@ -95,8 +98,9 @@
 :-use_module(library(cql/sql_write)).
 :-use_module(library(cql/sql_keywords)).
 :-use_module(library(cql/cql_database)).
+:-reexport(cql_database, [register_database_connection_details/2,
+                          cql_transaction/3]).
 
-:-reexport([cql_database]).
 
 /** <module> CQL - Constraint Query Language 
 
@@ -907,7 +911,7 @@ to *|'MIKE'|* in every row inserted.
 ---++ Hooks (Event Processing and History)           
 CQL provides hooks for maintaining detailed history of data in the database.
 
-The hook predicates are: event_notification_table/2, history_attribute/3, cql_update_history_hook/16
+The hook predicates are: event_notification_table/2, cql_history_attribute/3, cql_update_history_hook/16
    
 Event Processing and History recording can be suppressed for a particular
 update/insert/delete statement by including the _no_state_change_actions_9
@@ -960,7 +964,7 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 :-chr_type 'AttributeNameValuePair' ---> 'AttributeName'-'ApplicationValue'. 
 :-chr_type 'BooleanOperator' ---> and ; or.
 :-chr_type 'ComparisonOperator' ---> < ; =< ; == ; \== ; >= ; > ; (=~) ; (=\=) ; (=:=).
-:-chr_type 'CompilationInstruction' ---> if_var('Variable') ; if_not_var('Variable') ; if_null('Variable') ; if_not_null('Variable') ; list('Variable') ; empty('Variable') ; not_empty('Variable') ; compile ; and('CompileInstruction', 'CompileInstruction').
+:-chr_type 'CompilationInstruction' ---> if_var('Variable') ; if_not_var('Variable') ; if_null('Variable') ; if_not_null('Variable') ; list('Variable') ; empty('Variable') ; not_empty('Variable') ; compile ; and('CompilationInstruction', 'CompilationInstruction').
 :-chr_type 'CompileMode' ---> runtime ; compiletime.
 :-chr_type 'ConjunctionGoal' == any.
 :-chr_type 'ConjunctionVariable' == any.
@@ -1023,7 +1027,8 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 :-chr_type 'QueryType' ---> insert ; update ; delete ; select.
 :-chr_type 'Schema' == any.
 :-chr_type 'SelectAttribute' ---> select_attribute('SelectBindingType', 'Schema', 'TableName', 'TableAlias', 'AttributeName').
-:-chr_type 'SelectAttributeWithSize' ---> 'Size'-'Token'-select_attribute('SelectBindingType', 'Schema', 'TableName', 'TableAlias', 'AttributeName').
+:-chr_type 'SelectAttributeWithSize' ---> 'Size'-'SelectAttributeInfo'.
+:-chr_type 'SelectAttributeInfo' ---> select_info('CompilationInstruction', list('SqlToken'), 'Tail', 'Output').
 :-chr_type 'SelectAttributeVariableUsed' ---> select_attribute_variable_used.
 :-chr_type 'SelectBindingType' ---> plain ; aggregation('AggregationOperator').
 :-chr_type 'SelectionType' ---> aggregation_selection ; non_aggregation_selection.
@@ -1363,7 +1368,7 @@ sql_clause((A, B), SQL, Parameters):-
         ; sql_clause(B, SQL, Parameters)
         ).
 
-
+:-multifile(cql_dependency_hook/2).
 cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
         ( prolog_load_context(source, FileName),
           prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)) ->
@@ -1394,8 +1399,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
                 sort(ReferencedTables, ReferencedTableSet),  % Remove duplicates
                 file_base_name(FileName, FileBaseName),
                 file_name_extension(Module, _, FileBaseName),
-                module_dependency_facts(ReferencedTableSet, Module, ModuleDependencyFacts),
-                compile_aux_clauses(ModuleDependencyFacts)
+                ignore(cql_dependency_hook(ReferencedTableSet, Module))
             
             ; otherwise ->
                 true
@@ -1414,15 +1418,6 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
             throw(error(domain_error(cql_compilation_directive, CompilationDirective), _))
         ).
 
-
-module_dependency_facts([], _, []).
-module_dependency_facts([EntityName|EntityNames],
-                        Module,
-                        [:-dynamic(user:module_depends_on/2),
-                         :-multifile(user:module_depends_on/2),
-                         user:module_depends_on(Module, EntityModule)|Facts]) :-
-        entity_name_module_file_base_name(EntityName, EntityModule, _),
-        module_dependency_facts(EntityNames, Module, Facts).
 
 
 %%      cql_runtime(+Schema, +IgnoreIfNullVariables, +CqlA, +CqlB, +VariableMap, +FileName, +LineNumber)
@@ -2092,21 +2087,18 @@ store_attribute_bindings_1(Schema, QueryId, TableAlias, [AttributeNameValuePair|
 
 
 atomic_application_value(ApplicationValue) :-  % +
-        ( var(ApplicationValue) ->
-            true
-        ; atomic(ApplicationValue) ->
-            true
-        ; ApplicationValue = boolean(_) ->
-            true
-        ; ApplicationValue = rdiv(_, _) ->
-            true
-        ; ApplicationValue = t7(_, _, _, _, _, _, _) ->
-            true
-        ; ApplicationValue = {_} ->
-            true
-        ; is_list(ApplicationValue) ->
-            true
-        ).
+        ( var(ApplicationValue)
+        ; atom(ApplicationValue)
+        ; integer(ApplicationValue)
+        ; rational(ApplicationValue)
+        ; cql_atomic_value_check_hook(ApplicationValue)
+        ; is_list(ApplicationValue)
+        ; ApplicationValue == {null}
+        ; ApplicationValue == {timestamp}
+        ; ApplicationValue == {user_id}
+        ; ApplicationValue == {transaction_id}
+        ),
+        !.
   
 
 ensure_binding_is_on_the_external_variable_so_that_ignore_if_null_works_properly_1 @
@@ -2171,7 +2163,7 @@ fully_compile @
             debug(cql(compile), '==========~n~s^^^^^^^^^^~n~n', [Codes])
         ;
             true
-        ),      
+        ),
         check_for_top_without_order_by,
         write_query_sql,
         instantiate_table_aliases,
@@ -2347,9 +2339,7 @@ selection_variable(V) :-
         var(V).
 selection_variable(V) :-
         \+ ground(V),
-        ( V = t7(_, _, _, _, _, _, _)
-        ; V = boolean(_)
-        ).
+        cql_atomic_value_check_hook(V).
 selection_variable(selection_constant(_)).
 
 
@@ -2855,6 +2845,7 @@ cqlv2_1_except_when_restriction_already_exists_5 @
         <=>
         true.
 
+
 cqlv2_1_except_comparisons @
         query_type(QueryId, Type),
         comparison(QueryId, Lhs, _Operator, Rhs)
@@ -3314,19 +3305,18 @@ write_in_line_formatted_update_attribute @
         in_line_format(QueryId, Format, FormatArgs, ApplicationValue),
         write_update_attribute(QueryId, TableAlias, AttributeName, ApplicationValue).
 
-
+:-multifile(cql_atomic_value_check_hook/1).
 write_atomic_update_attribute @
         query_table_alias(QueryId, Schema, TableName, TableAlias)
         \
         write_update_attribute(QueryId, TableAlias, AttributeName, ApplicationValue)
         <=>
-        ( is_a(ApplicationValue, var)
-        ; is_a(ApplicationValue, atom)
-        ; is_a(ApplicationValue, integer)
-        ; is_a(ApplicationValue, rational)
-        ; is_a(ApplicationValue, t7)
-        ; is_a(ApplicationValue, boolean)
-        ; is_a(ApplicationValue, null)
+        ( var(ApplicationValue)
+        ; atom(ApplicationValue)
+        ; integer(ApplicationValue)
+        ; rational(ApplicationValue)
+        ; cql_atomic_value_check_hook(ApplicationValue)
+        ; ApplicationValue == {null}
         ; ApplicationValue == {timestamp}
         ; ApplicationValue == {user_id}
         ; ApplicationValue == {transaction_id}
@@ -3802,7 +3792,7 @@ collect_select_attributes @
         collect_select_attributes(QueryId, Tail),
         include_select_attribute(QueryId, CompileInstruction, Size, Tokens, TokenTail, Attribute)
         <=>
-        Tail = [Size-(CompileInstruction-Tokens-TokenTail-Attribute)|NewTail],
+        Tail = [Size-select_info(CompileInstruction, Tokens, TokenTail, Attribute)|NewTail],
         collect_select_attributes(QueryId, NewTail).
 
 finished_collecting_select_attributes @
@@ -3811,7 +3801,7 @@ finished_collecting_select_attributes @
         Tail = [].       
 
 actually_write_select_attributes(_, _, []).
-actually_write_select_attributes(QueryId, _PreviousCompileInstruction, [CompileInstruction-Tokens-Tail-Attribute|More]):-
+actually_write_select_attributes(QueryId, _PreviousCompileInstruction, [select_info(CompileInstruction, Tokens, Tail, Attribute)|More]):-
         %instruction_conjunction(PreviousCompileInstruction, CompileInstruction, Conjunction),
         write_select_attribute(QueryId, CompileInstruction, Tokens, Tail, Attribute),
         actually_write_select_attributes(QueryId, CompileInstruction, More).
@@ -3903,7 +3893,7 @@ in_line_join_on_postgres_select_insert_or_delete @
         memberchk(QueryType, [select, insert, delete]),
         var(JoinVariableA),
         JoinVariableA == JoinVariableB,
-        TableAliasA \== TableAliasB
+        TableAliasA \== TableAliasB        
         |
         join_variable(JoinVariableA),
         join_variable(JoinVariableB),
@@ -4833,7 +4823,11 @@ write_restriction_between_expressions @
         ; otherwise ->
             throw(format('Cannot find attribute to determine expression data type in ~w or in ~w', [LhsExpression, RhsExpression]))
         ),
-        odbc_data_type(Schema, TableName, AttributeName, OdbcDataType),
+        ( odbc_data_type(Schema, TableName, AttributeName, OdbcDataType)->
+            true
+        ; otherwise->
+            throw(format('Could not determine the type of ~w.~w', [TableName, AttributeName]))
+        ),
         write_restriction_1(QueryId,
                             CompileInstruction,
                             RestrictionType,
@@ -6334,7 +6328,7 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
           ; AttributeName == updated_
           ),
           ApplicationValue == {timestamp} ->
-            t7_to_unambiguous_atom(TransactionTimestamp, OdbcInput)
+            timestamp_to_unambiguous_atom(TransactionTimestamp, OdbcInput)
       
         ; AttributeName == transaction_id_,
           ApplicationValue == {transaction_id} ->
@@ -6392,7 +6386,9 @@ bind_application_values([count(Count)|Outputs], [Count|OdbcOutputs]) :- !,
         bind_application_values(Outputs, OdbcOutputs).
 
 bind_application_values([avg(Avg)|Outputs], [AvgAtom|OdbcOutputs]) :- !,
-        atom_to_rational(AvgAtom, Avg),
+        atom_to_term(AvgAtom, AvgFloat, _),
+        Avg is rationalize(AvgFloat),
+        %atom_to_rational(AvgAtom, Avg),
         bind_application_values(Outputs, OdbcOutputs).
 
 bind_application_values([Output|Outputs],
@@ -6522,18 +6518,12 @@ check_attribute_3 @
        |
        throw(format('Unknown attribute in CQL attribute list: ~w', [Schema:TableName:AttributeName])).
 
+:-multifile(cql_check_value_hook/1).
 check_attribute_4 @
        attribute_to_check(_, _, _-Value)
        <=>
        ground(Value),
-       
-       ( Value = t7(_, _, _, _, _, _, _) ->
-           \+ is_a(Value, t7)
-       ; Value = boolean(_) ->
-           \+ is_a(Value, boolean)
-       ; Value = rdiv(_, _) ->
-           \+ is_a(Value, rational)
-       )
+       cql_check_value_hook(Value)
        |
        throw(format('Invalid constant: ~w', [Value])).
 
@@ -6574,7 +6564,7 @@ embed_odbc_inputs([Atom|Atoms], [OdbcInput|OdbcInputs]) -->
 
 
 odbc_input_atom(timestamp(Year, Month, Day, Hour, Minute, Sec, MilliSec)) --> !,
-        {t7_to_unambiguous_atom(t7(Year, Month, Day, Hour, Minute, Sec, MilliSec), TimeStampAtom)},
+        {timestamp_to_unambiguous_atom(timestamp(Year, Month, Day, Hour, Minute, Sec, MilliSec), TimeStampAtom)},
         ['\'', TimeStampAtom, '\''].
 
 odbc_input_atom(Atom) -->  % This handle decimals as well, which at this point are atoms e.g. '10.000'
@@ -7137,7 +7127,7 @@ is_state_change_attribute(StateChangeType,    % +
       
         once(( event_notification_table(Schema, TableName)
              ; StateChangeType == update,
-               history_attribute(Schema, TableName, AttributeName)
+               cql_history_attribute(Schema, TableName, AttributeName)
              )).
 
 
@@ -7238,9 +7228,9 @@ history_hook(Schema,                      % +
         % Need this because CHR rule call_history_hook is also called for attributes
         % identified in pql_event_notification_table/2.  We don't necessarily want these
         % turning up in history
-        history_attribute(Schema,
-                          TableName,
-                          AttributeName),
+        cql_history_attribute(Schema,
+                              TableName,
+                              AttributeName),
       
         % Call the actual hook
         update_history(Schema,
@@ -7814,9 +7804,10 @@ attribute @
 %!      cql_suggest_indices(+RestrictionTree, +QueryId) is det.
 %
 %       Warn of any restrictions without corresponding indexes on the query identified by QueryId.
+:-multifile(suggest_indices/1).
 cql_suggest_indices(RestrictionTree, QueryId) :-
         phrase(conjunction(RestrictionTree, QueryId), Conjunction),   % Each solution is a different conjunction
-        suggest_indices(Conjunction).
+        ignore(suggest_indices(Conjunction)).
 
 conjunction(or(LHS, RHS), QueryId) -->
         !,
@@ -8240,6 +8231,74 @@ port_label(exception,          'ERROR ', red).
 port_label(external_exception, 'ERROR ', red).
 
 
+%%      cql_update_history_hook(+Schema,
+%%                              +TableName,
+%%                              +AttributeName,
+%%                              +PrimaryKeyAttributeName,
+%%                              +PrimaryKeyValue,
+%%                              +ApplicationValueBefore,
+%%                              +ApplicationValueAfter,
+%%                              +AccessToken,
+%%                              +UserId,
+%%                              +UserIpAddress,
+%%                              +TransactionId,
+%%                              +TransactionTimestamp,
+%%                              +ThreadId,
+%%                              +Spid,
+%%                              +Connection,
+%%                              +Goal).
+%
+%       Use this hook predicate to actually record database attribute value changes.
+%
+%       You are free to let this predicate fail or raise an exception - the
+%       database layer will ignore both of these eventualities.
+%
+%       @param Schema <atom>
+%       @param TableName <atom> (lower case)
+%       @param AttributeName <atom> (lower case)
+%       @param PrimaryKeyAttributeName <atom> (lower case)
+%       @param PrimaryKeyValue <int>
+%       @param ApplicationValueBefore <domain dependent>
+%       @param ApplicationValueAfter <domain dependent>
+%       @param AccessToken <atom>
+%       @param UserId <atom>
+%       @param UserIpAddress <atom>
+%       @param TransactionId <atom>
+%       @param TransactionTimestamp <t7/7>
+%       @param ThreadId <atom>
+%       @param Spid <int>
+%       @param Connection <opaque>
+%       @param Goal <goal term> The goal passed to pri_db_trans
+:-multifile(cql_update_history_hook/16).
+
+
+%%      event_notification_table(+Schema,
+%%                               +TableName).
+:-multifile(event_notification_table/2).
+
+%%      cql_history_attribute(+Schema,
+%%                            +TableName,
+%%                            +ColumnName).
+:-multifile(cql_history_attribute/3).
+
+%%      sql_gripe_hook(+Level,
+%%                     +Format,
+%%                     +Args).
+%       Called when something dubious is found by the SQL parser.
+
+:-multifile(sql_gripe_hook/3).
+sql_gripe(Level, Format, Args):-
+        ignore(sql_gripe_hook(Level, Format, Args)).
+
+timestamp_to_unambiguous_atom(timestamp(Y, M, D, H, Min, S, Ms), Atom):-
+        format(atom(Atom), '~`0t~w~4+-~`0t~w~3+-~`0t~w~3+ ~`0t~w~3+:~`0t~w~3+:~`0t~w~3+.~`0t~w~4+', [Y, M, D, H, Min, S, Ms]).
+
+
+:-multifile(cql_inline_domain_value_hook/2).
+domain_allowed_value(Domain, Value):-
+        cql_inline_domain_value_hook(Domain, Value).
+
+
 % FIXME: Clean up everything below this line
 
 accurate_wall_clock_time(T):- get_time(T).
@@ -8249,37 +8308,29 @@ throw_exception(ErrorId, Format, Args):-
 throw_exception(ErrorId, Message):-
         throw(cql_error(ErrorId, Message)).
 
-atom_to_rational(Atom, Rational):-
-        atom_to_term(Atom, X, _),
-        Rational is rationalize(X).
-
-% FIXME: These should all not be necessary!
-sql_gripe_exempt_module(_).
-t7_to_unambiguous_atom(t7(Y, M, D, H, Min, S, Ms), Atom):-
-        format(atom(Atom), '~`0t~w~4+-~`0t~w~3+-~`0t~w~3+ ~`0t~w~3+:~`0t~w~3+:~`0t~w~3+.~`0t~w~4+', [Y, M, D, H, Min, S, Ms]).
-
-domain_allowed_value(_, _).
-entity_name_module_file_base_name(_, _, _).
-event_notification_table(_, _):- fail.
-history_attribute(_, _, _):- fail.
-suggest_indices(_).
-is_a(Var,var):- var(Var), !.
-is_a(Atom,atom):- atom(Atom), !.
-is_a(Atom,integer):- integer(Atom), !.
-is_a(Atom,rational):- rational(Atom), !.
-is_a(Atom,t7):- \+var(Atom), Atom = t7(_,_,_,_,_,_,_), !.
-is_a(Atom,boolean):- \+var(Atom), Atom = boolean(X), (X == true ; X == false), !.
-is_a(Atom, null):- \+var(Atom), Atom == {null}.
-
-t7_now(t7(Y, M, D, HH, MM, SS, NN)):-
-        get_time(X),
-        stamp_date_time(X, date(Y,M,D,HH,MM,S,_,_,_), local),
-        NN is round(float_fractional_part(S) * 1000),
-        SS is integer(float_integer_part(S)).
-
 
 
 
 % Tests to add:
 % Can I do anything about the ugly compile: list of attributes in sqlite?
 % Sqlite seems to handle longvarchar and varchar(max) and text as different types to varchar(N). The type conversion fails and we end up inserting NULLs
+
+
+??(Goal):-
+        setup_call_catcher_cleanup(format('CALL  ~q~n', [Goal]),
+                                   Goal,
+                                   Catcher,
+                                   ( Catcher == ! ->
+                                       format('CUT   ~q~n', [Goal])
+                                   ; Catcher == fail->
+                                       format('FAIL  ~q~n', [Goal])
+                                   ; Catcher == exit->
+                                       format('EXIT  ~q~n', [Goal])
+                                   ; Catcher = error(E)->
+                                       format('ERROR  ~q~n~w~n', [E])
+                                   )),
+        ( var(Catcher)->
+            format('PEND  ~q~n', [Goal])
+        ; otherwise->
+            true
+        ).

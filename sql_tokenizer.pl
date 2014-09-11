@@ -40,29 +40,9 @@
 */
 
 :-module(sql_tokenizer,
-         [sql_tokens//1,
-          sql_gripe/3]).
+         [sql_tokens//1]).
 
-sql_gripe(Level, Format, Args):-
-        sql_gripe_level(L),
-        ( L >= Level ->
-            ( L =< 2,
-              prolog_load_context(module, Module),
-              sql_gripe_exempt_module(Module)->
-                true
-            ; otherwise->                
-                ( prolog_load_context(file, Filename)->
-                    true
-                ; otherwise->
-                    Filename = '<unknown file>'
-                ),
-                format(atom(Message), Format, Args),
-                format(user_error, '~w: ~w~n', [Filename, Message])
-            )
-        ; otherwise->
-            true
-        ).
-        
+:-use_module(library(cql/cql), [sql_gripe/3]).
 
 % No codes -> no tokens
 sql_tokens([], [], []):- !.
@@ -78,7 +58,7 @@ optional_whitespace-->
         optional_whitespace.
 optional_whitespace--> [].
 
-:- meta_predicate read_until(//,*,?,?).
+%:- meta_predicate read_until(//,*,?,?).
 
 :- if(current_prolog_flag(double_quotes,string)).
 :- multifile check:valid_string_goal/1.

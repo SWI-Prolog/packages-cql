@@ -49,7 +49,6 @@
 % CREATE TABLE cql_table_1(cql_table_1_pk SERIAL PRIMARY KEY, varchar_column varchar(30))
 % CREATE TABLE cql_table_2(cql_table_2_pk SERIAL PRIMARY KEY, varchar_column varchar(30), decimal_column DECIMAL(30,10))
 :-module(cql_demo, [demo/0]).
-
 :-use_module(library(cql/cql)).
 :-cql_option(default_schema(seattle)).
 :-cql_option(max_db_connections(10)).
@@ -75,8 +74,9 @@ cql:odbc_value_to_application_value_hook(decimal(_,_), _, _, _, _, Value, Ration
             atom_concat('-0.', Rest, NumericAtom)     
         ; otherwise ->
             NumericAtom = Value
-        ),      
-        atom_to_rational(NumericAtom, Rational).
+        ),
+        atom_to_term(NumericAtom, Float, _),
+        Rational is rationalize(Float).
 
 
 % Also note that the empty list is a legacy of CQLv1. Ultimately I would like to change {[], .....} to be just {....}.

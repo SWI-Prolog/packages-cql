@@ -140,7 +140,11 @@ Because we have truncation, the order of operations is crucial: Although (x * y)
 :-use_module(library(cql/sql_tokenizer)).
 
 :-use_module(library(cql/cql), [default_schema/1,
-                                database_attribute/8]).
+                                dbms/2,
+                                database_attribute/8,
+                                domain_database_data_type/2,
+                                routine_return_type/3,
+                                sql_gripe/3]).
 
 :-chr_option(line_numbers, on).
 :-chr_option(check_guard_bindings, error).
@@ -1334,7 +1338,8 @@ resolve_unions @
         ( resolve_union_type(QueryId, L, R, T)->
             true
         ; otherwise->
-            throw_exception(failed_to_resolve_union, 'Could not determine the type of the union of ~w and ~w', [L, R])
+            format(atom(Message), 'Could not determine the type of the union of ~w and ~w', [L, R]),
+            throw(cql_error(failed_to_resolve_union, Message))
         ).
 
 resolve_derived_tables @
@@ -1812,7 +1817,8 @@ fetch_database_attribute(_, Schema, TableName, _, _, _, _, _):-
         \+system_table(TableName, _, _),
         \+database_attribute(_, Schema, TableName, _, _, _, _, _),
         !,
-        throw_exception(no_such_entity, 'View references entity ~w which does not exist', [TableName]).
+        format(atom(Message), 'View references entity ~w which does not exist', [TableName]),
+        throw(cql_error(no_such_entity, Message)).
 
 fetch_database_attribute(_, Schema, TableName, ColumnName, Domain, _, _, _):-
         system_table(TableName, ColumnName, Domain)
@@ -1895,7 +1901,7 @@ strip_sql_comments_list([A|B], [C|D]):- !, strip_sql_comments(A, C), strip_sql_c
 
 consolidate_errors(Var):-
         var(Var),
-        throw_exception(uninstantiated_term_in_sql, 'SQL tree is not ground: ~w', [Var]).
+        throw(instantiation_error(Var)).
 consolidate_errors(meta(_Comments, ErrorGroup):A):- !,
         ( ErrorGroup = {null} ->
             true
@@ -1936,19 +1942,23 @@ routine_type(Name, Type):-
         % Note that this is not the DBMS we are reading IN, but the one we will eventually USE. This is why
         % I call default_schema here.
         default_schema(Schema), 
-        dbms(Schema, DBMS),
+        dbms(Schema, _DBMS),
         strip_sql_comments(Name, identifier(_, Identifier)),
-        ( dbms_normalize_name(DBMS, Identifier, NormalizedName),
+        ( %dbms_normalize_name(DBMS, Identifier, NormalizedName),
+          % FIXME: How to handle this?
+          NormalizedName = Identifier,
           routine_return_type(Schema, NormalizedName, Type),
           Type \== void->
             true
         ; otherwise->
-            throw_exception(cannot_determine_function_type, 'Could not determine the type of SQL function ~w', [Identifier])
+            format(atom(Message), 'Could not determine the type of SQL function ~w', [Identifier]),
+            throw(cql_error(cannot_determine_function_type, Message))
         ).
 
 merge_sources(S, S, S):- !.
 merge_sources(A, B, _):-
-        throw_exception(could_not_merge_sources, '~w vs ~w', [A, B]).
+        format(atom(Message), '~w vs ~w', [A, B]),
+        throw(cql_error(could_not_merge_sources, Message)).
 
 type_mismatch(type_mismatch(Link, Type1, Type2), type_mismatch(Link, Type1, Type2), Type1, Type2):-
         % Note that just because the two unify does not mean that one of them is not already unified to a DIFFERENT mismatch of Type1 and Type2!
