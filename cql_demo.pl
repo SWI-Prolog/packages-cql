@@ -147,11 +147,25 @@ insert_some_data:-
         {[], insert(cql_table_2, [varchar_column-foo, decimal_column-1 rdiv 8])}.
 
 
+splunge(GlAccountingDate):-
+        ({[],
+          se_lt_z :: [i-FromGlAccountingDate],
+          FromGlAccountingDate =< GlAccountingDate} ->
+           true
+        ; 
+         true).
 
-% CREATE TABLE se_lt_x(x_pk INTEGER PRIMARY KEY AUTOINCREMENT, a VARCHAR(256), b VARCHAR(50), c INTEGER, d VARCHAR(50), e VARBINARY(50), f VARCHAR(50));
-% CREATE TABLE se_lt_x1(x_pk INTEGER PRIMARY KEY AUTOINCREMENT, a VARCHAR(256), b VARCHAR(50), c INTEGER, d VARCHAR(50));
-% CREATE TABLE se_lt_y(d VARCHAR(50), e VARCHAR(50), f INTEGER, inserted_ DATETIME, updated_ DATETIME);
-% CREATE TABLE se_lt_z(g VARCHAR(50), h VARCHAR(50), i INTEGER, j VARCHAR(50), k VARCHAR(50), inserted_ DATETIME, updated_ DATETIME, inserted_by_ VARCHAR(50), updated_by_ VARCHAR(50), generation_ INTEGER, transaction_id_ VARCHAR(64));
-% CREATE TABLE se_lt_types(se_types_pk INTEGER PRIMARY KEY AUTOINCREMENT, integer_ INTEGER, bigint_ BIGINT, tinyint_ SMALLINT, bit_ SMALLINT, varchar_ VARCHAR(50), varchar_max_ VARCHAR(8000), nvarchar_ VARCHAR(50), nvarchar_max_ VARCHAR(8000), varbinary_ VARBINARY, varbinary_max_ VARBINARY, t7_ DATETIME, datetime_ DATETIME, datetime2_ DATETIME, decimal_ DECIMAL(18,5), decimal_2 DECIMAL(9,2), boolean_ SMALLINT, inserted_ DATETIME, updated_ DATETIME, inserted_by_ VARCHAR(50), updated_by_ VARCHAR(50), generation_ INTEGER, transaction_id_ VARCHAR(64), encrypted VARCHAR(256));
-% CREATE TABLE se_lt_n(n INTEGER, i INTEGER, j DECIMAL(18,4), k DECIMAL(18, 2));
-% CREATE TABLE se_lt_history(schema_ VARCHAR(50), table_name VARCHAR(50), attribute_name VARCHAR(50), primary_key_attribute_name VARCHAR(50), primary_key_value INTEGER, application_value_before VARCHAR(512), application_value_after VARCHAR(512), access_token VARCHAR(50), user_id VARCHAR(50), user_ip_address VARCHAR(50), transaction_id VARCHAR(50), transaction_timestamp DATETIME, thread_id VARCHAR(50), spid INTEGER, connection_ VARCHAR(50));
+
+/*
+ CREATE TABLE se_lt_x(x_pk INTEGER PRIMARY KEY AUTOINCREMENT, a VARCHAR(256), b VARCHAR(50), c INTEGER, d VARCHAR(50), e VARBINARY(50), f VARCHAR(50));
+ CREATE TABLE se_lt_x1(x_pk INTEGER PRIMARY KEY AUTOINCREMENT, a VARCHAR(256), b VARCHAR(50), c INTEGER, d VARCHAR(50));
+ CREATE TABLE se_lt_y(d VARCHAR(50), e VARCHAR(50), f INTEGER, inserted_ DATETIME, updated_ DATETIME);
+ CREATE TABLE se_lt_z(g VARCHAR(50), h VARCHAR(50), i INTEGER, j VARCHAR(50), k VARCHAR(50), inserted_ DATETIME, updated_ DATETIME, inserted_by_ VARCHAR(50), updated_by_ VARCHAR(50), generation_ INTEGER, transaction_id_ VARCHAR(64));
+ CREATE TABLE se_lt_types(se_types_pk INTEGER PRIMARY KEY AUTOINCREMENT, integer_ INTEGER, bigint_ BIGINT, tinyint_ SMALLINT, bit_ SMALLINT, varchar_ VARCHAR(50), varchar_max_ VARCHAR(8000), nvarchar_ VARCHAR(50), nvarchar_max_ VARCHAR(8000), varbinary_ VARBINARY, varbinary_max_ VARBINARY, t7_ DATETIME, datetime_ DATETIME, datetime2_ DATETIME, decimal_ DECIMAL(18,5), decimal_2 DECIMAL(9,2), boolean_ SMALLINT, inserted_ DATETIME, updated_ DATETIME, inserted_by_ VARCHAR(50), updated_by_ VARCHAR(50), generation_ INTEGER, transaction_id_ VARCHAR(64), encrypted VARCHAR(256));
+ CREATE TABLE se_lt_n(n INTEGER, i INTEGER, j DECIMAL(18,4), k DECIMAL(18, 2));
+ CREATE TABLE se_lt_history(schema_ VARCHAR(50), table_name VARCHAR(50), attribute_name VARCHAR(50), primary_key_attribute_name VARCHAR(50), primary_key_value INTEGER, application_value_before VARCHAR(512), application_value_after VARCHAR(512), access_token VARCHAR(50), user_id VARCHAR(50), user_ip_address VARCHAR(50), transaction_id VARCHAR(50), transaction_timestamp DATETIME, thread_id VARCHAR(50), spid INTEGER, connection_ VARCHAR(50));
+
+CREATE TABLE cql_table_1(cql_table_1_pk INTEGER PRIMARY KEY AUTOINCREMENT, varchar_column VARCHAR(30));
+CREATE TABLE cql_table_2(cql_table_2_pk INTEGER PRIMARY KEY AUTOINCREMENT, varchar_column VARCHAR(30), decimal_column DECIMAL(30,10));
+
+*/

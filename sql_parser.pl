@@ -140,6 +140,7 @@ Because we have truncation, the order of operations is crucial: Although (x * y)
 :-use_module(library(cql/sql_tokenizer)).
 
 :-use_module(library(cql/cql), [default_schema/1,
+                                cql_normalize_name/3,
                                 dbms/2,
                                 database_attribute/8,
                                 domain_database_data_type/2,
@@ -1941,16 +1942,15 @@ builtin_function('Microsoft SQL Server', _, user_name).
 routine_type(Name, Type):-
         % Note that this is not the DBMS we are reading IN, but the one we will eventually USE. This is why
         % I call default_schema here.
-        default_schema(Schema), 
-        dbms(Schema, _DBMS),
+        default_schema(Schema),
+        dbms(Schema, DBMS),
         strip_sql_comments(Name, identifier(_, Identifier)),
-        ( %dbms_normalize_name(DBMS, Identifier, NormalizedName),
-          % FIXME: How to handle this?
-          NormalizedName = Identifier,
+        ( cql_normalize_name(DBMS, Identifier, NormalizedName),
           routine_return_type(Schema, NormalizedName, Type),
           Type \== void->
             true
         ; otherwise->
+            prolog,
             format(atom(Message), 'Could not determine the type of SQL function ~w', [Identifier]),
             throw(cql_error(cannot_determine_function_type, Message))
         ).

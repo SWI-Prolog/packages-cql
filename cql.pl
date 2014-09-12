@@ -61,6 +61,7 @@
           cql_temporary_column_name/4,
           cql_log/4,
           cql_history_attribute/3,
+          cql_normalize_name/3,
           default_schema/1,
           odbc_execute_with_statistics/4,
           access_token_to_user_id/2,
@@ -1142,6 +1143,7 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 :-chr_constraint no_sql_statement_generated.
 :-chr_constraint no_state_change_actions(-'QueryId').
 :-chr_constraint no_where_restriction(+'StateChangeType').
+:-chr_constraint not_a_singleton(+'Variable').
 :-chr_constraint nolock(-'QueryId', ?'TableAlias').
 :-chr_constraint number_of_rows_affected(-'QueryId', +'Connection', ?'N').
 
@@ -2778,6 +2780,8 @@ restriction_from_comparison @
         \
         comparison(QueryId, Lhs, Operator, Rhs)
         <=>
+        not_a_singleton(Lhs),
+        not_a_singleton(Rhs),
         variables_to_attributes(Lhs, MappedLhs),
         variables_to_attributes(Rhs, MappedRhs),
         restriction_leaf(QueryId, where, comparison(MappedLhs, Operator, MappedRhs)).
@@ -4818,8 +4822,7 @@ write_restriction_between_expressions @
         RestrictionType \== having   % Could be an aggregation e.g. sum(x) - leave those for the HAVING phase
         |
         ( representative_attribute(LhsExpression+RhsExpression, Schema, TableName, AttributeName) ->
-            true
-        
+            true       
         ; otherwise ->
             throw(format('Cannot find attribute to determine expression data type in ~w or in ~w', [LhsExpression, RhsExpression]))
         ),
@@ -5131,7 +5134,6 @@ collation(Schema, _):-
             fail
         ).
 
-
 write_restriction_expression_1 @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, _, _, _, _, _, tokens_and_parameters(Tokens, Tail, OdbcParameters))
         <=>
@@ -5411,6 +5413,7 @@ write_order_by_aggregate @
         %map_database_atom(AggregationOperator, AggregationOperatorUc)
         upcase_atom(AggregationOperator, AggregationOperatorUc)
         |
+        not_a_singleton(Variable),
         write_order_by_attribute(QueryId, [AggregationOperatorUc, '(', TableAlias, '.', attribute_name(AttributeName), ') ', Direction|T], T).
 
 
@@ -5425,6 +5428,7 @@ write_order_by @
             Direction = 'DESC'
         )
         |
+        not_a_singleton(Variable),
         write_order_by_attribute(QueryId, [TableAlias, '.', attribute_name(AttributeName), ' ', Direction|T], T).
 
 
@@ -7581,6 +7585,12 @@ remove_query(QueryId, _) \ write_select_attributes(QueryId) <=> true.
 remove_query(QueryId, _) \ write_sql(QueryId, _, _, _, _, _, _) <=> true.
 remove_query(_, _) <=> true.
 
+nonvar_is_never_singleton @
+        not_a_singleton(Value)
+        <=>
+        nonvar(Value)
+        |
+        true.
 
 collect_constraints_that_must_be_recreated_for_use_at_runtime @
         collect_runtime_constraints(RuntimeConstraints),
@@ -7654,7 +7664,13 @@ cn13 @
         runtime_constraints(Constraints)
         <=>
         runtime_constraints((cql_var_check(Variable), Constraints)).
-        
+
+cn14 @
+        not_a_singleton(Variable),
+        runtime_constraints(Constraints)
+        <=>
+        runtime_constraints((Variable=Variable, Constraints)).
+
 
 clean_up_statistics @
         no_debug
@@ -8048,15 +8064,6 @@ access_token_to_user_id(X, Y):-
 % If log_selects succeeds, selects will be logged via cql_log/4.
 :-multifile(log_selects/0).
 
-%%      dbms_normalize_name(+DBMS, +Name, -NormalizedName).
-%       Normalize a name which is potentially longer than the DBMS allows to a unique truncation
-:-multifile(cql_dbms_atom_normalization_hook/3).
-dbms_normalize_name(Schema, Input, Mapped):-
-        ( cql_dbms_atom_normalization_hook(Schema, Input, Mapped)->
-            true
-        ; otherwise->
-            Mapped = Input
-        ).
 
 % default_schema/1 needs to be defined by the application
 :-multifile(cql:default_schema/1).
@@ -8333,4 +8340,13 @@ throw_exception(ErrorId, Message):-
             format('PEND  ~q~n', [Goal])
         ; otherwise->
             true
+        ).
+
+%%      cql_normalize_name(+DBMS, +Name, -NormalizedName).
+%       Normalize a name which is potentially longer than the DBMS allows to a unique truncation
+:-multifile(cql_normalize_atom_hook/3).
+cql_normalize_name(DBMS, CQLName, DBMSName):-
+        ( cql_normalize_atom_hook(DBMS, CQLName, DBMSName)->
+            true
+        ; CQLName = DBMSName
         ).

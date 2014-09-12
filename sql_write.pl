@@ -44,6 +44,8 @@
                      format_sql_error/3]).
 
 :-use_module(library(cql/sql_keywords)).
+:-use_module(library(cql/sql_parser), [strip_sql_comments/2]).
+:-use_module(library(cql/cql), [cql_normalize_name/3]).
 
 sql_write(Stream, Term, Options):-
         new_sql_stream(Output),
@@ -177,7 +179,7 @@ sql_write_term(identifier(Schema, Name), Indent, Options)--> !,
         ),
         ( {memberchk(dbms('PostgreSQL'), Options)}->
             {strip_sql_comments(Name, NameNoComments),
-             dbms_normalize_name('PostgreSQL', NameNoComments, Normalized)},
+             cql_normalize_name('PostgreSQL', NameNoComments, Normalized)},
             sql_write_term(Normalized, Indent, Options)
         ; {otherwise}->
             sql_write_term(Name, Indent, Options)
@@ -302,7 +304,7 @@ sql_write_term(select(Quantifier, Selections, Source, Limit, {no_for}), Indent, 
 
 sql_write_term(column(Name, Type, AllowsNulls, IsIdentity, _Default), Indent, Options)--> !,
         ( {memberchk(dbms(DBMS), Options)}->
-            {dbms_normalize_name(DBMS, Name, NormalizedName)}
+            {cql_normalize_name(DBMS, Name, NormalizedName)}
         ; {otherwise}->
             {Name = NormalizedName}
         ),

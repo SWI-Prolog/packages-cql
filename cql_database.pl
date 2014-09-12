@@ -50,6 +50,7 @@
           database_transaction_query_info/5,          
           transaction_active/0,
           register_database_connection_details/2,
+          database_connection_details/2,
           odbc_connection_call/3,
           update_history/16,
           odbc_cleanup_and_disconnect/1]).
@@ -57,6 +58,8 @@
 :-use_module(library(cql/cql)).
 
 :-dynamic
+        database_connection_details/2.
+:-volatile
         database_connection_details/2.
 
 :-thread_local
@@ -451,6 +454,12 @@ log_transaction_state(AccessToken, TransactionId, TransactionState) :-
         upcase_atom(TransactionState, TransactionStateUc),
         cql_log([], informational, '\t~p\t~p\t~p', [UserId, TransactionId, TransactionStateUc]).
 
+
+%%      register_database_connection_details(+Schema:atom, +ConnectionDetails) is det.
+%
+%       This should be called once to register the database connection details.
+%
+%       @param ConnectionDetails driver_string(DriverString) or dsn(Dsn, Username, Password)
 
 register_database_connection_details(Schema, ConnectionDetails) :-
         assert(database_connection_details(Schema, ConnectionDetails)).
