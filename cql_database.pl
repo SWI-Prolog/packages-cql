@@ -123,6 +123,10 @@ odbc_connection_call(Schema, Connection, Goal) :-
                 gethostname(HostName),
                 format(atom(DriverString), 'DSN=~w;UID=~w;PWD=~w;WSID=~w;', [Dsn, Username, Password, HostName])
 
+            ; ConnectionDetails = dsn(Dsn) ->
+                gethostname(HostName),
+                format(atom(DriverString), 'DSN=~w;WSID=~w;', [Dsn, HostName])
+
             ; otherwise ->
                 throw(invalid_connection_details(ConnectionDetails))
             ),
