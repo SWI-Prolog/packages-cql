@@ -1950,7 +1950,6 @@ routine_type(Name, Type):-
           Type \== void->
             true
         ; otherwise->
-            prolog,
             format(atom(Message), 'Could not determine the type of SQL function ~w', [Identifier]),
             throw(cql_error(cannot_determine_function_type, Message))
         ).
