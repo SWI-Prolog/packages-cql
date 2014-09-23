@@ -50,6 +50,7 @@
           database_transaction_query_info/3,
           transaction_active/0,
           register_database_connection_details/2,
+          resolve_deadlock/1,
           database_connection_details/2,
           odbc_connection_call/3,
           update_history/16,

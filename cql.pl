@@ -3789,7 +3789,7 @@ flush_select_attributes @
         ==>
         collect_select_attributes(QueryId, Unsorted),
         keysort(Unsorted, SortedWithKeys),
-        strip_sort_keys(SortedWithKeys, Sorted),
+        cql_strip_sort_keys(SortedWithKeys, Sorted),
         actually_write_select_attributes(QueryId, compile, Sorted).
 
 collect_select_attributes @
@@ -6926,7 +6926,7 @@ sql_to_select_values_pre_state_change_1(delete, OdbcParameters, [PrimaryKeyAttri
 sql_to_select_values_pre_state_change_1(update, OdbcParameters, StateChangeAttributeNames, TableAlias, OdbcRestrictionParameters) -->
         {odbc_parameters_for_state_change(OdbcParameters, update, KeyedStateChangeAttributeNames, OdbcRestrictionParameters, []),
         keysort(KeyedStateChangeAttributeNames, SortedKeyedStateChangeAttributeNames),
-        strip_sort_keys(SortedKeyedStateChangeAttributeNames, StateChangeAttributeNames)},
+        cql_strip_sort_keys(SortedKeyedStateChangeAttributeNames, StateChangeAttributeNames)},
         ['SELECT '],
         state_change_select_select_sql(StateChangeAttributeNames, TableAlias).
 
@@ -7407,7 +7407,7 @@ debug_after @
         debug_after(Reason, Outputs)
         <=>
         statistics(inferences, I2),
-        accurate_wall_clock_time(T2),
+        cql_perf_time(T2),
         statistics(cputime, C2),
         ElapsedTime is T2 - T1,
         CpuTime is C2 - C1,
@@ -7715,7 +7715,7 @@ finish_debug @
 
 cql_show(Goal, Mode):-
         statistics(cputime, C1),
-        accurate_wall_clock_time(T1),
+        cql_perf_time(T1),
         statistics(inferences, I1),
         debug_statistics(C1, T1, I1),
         show_debug(Mode),
@@ -8049,9 +8049,9 @@ map_database_atom(Keyword, Mapped):-
         format(atom(Mapped), '"~w"', [Keyword]).
 map_database_atom(Atom, Atom).
 
-strip_sort_keys([], []).
-strip_sort_keys([_-Detail|T1], [Detail|T2]) :-
-        strip_sort_keys(T1, T2).
+cql_strip_sort_keys([], []).
+cql_strip_sort_keys([_-Detail|T1], [Detail|T2]) :-
+        cql_strip_sort_keys(T1, T2).
 
 cql_path_arg([], Term, Term).
 cql_path_arg([Index|Indices], Term, SubTerm) :-
@@ -8316,7 +8316,7 @@ domain_allowed_value(Domain, Value):-
 
 % FIXME: Clean up everything below this line
 
-accurate_wall_clock_time(T):- get_time(T).
+cql_perf_time(T):- get_time(T). % This needs to do something else for Windows because get_time/1 has insufficient granularity. Jan suggests a windows_perf_counter/1 predicate
 throw_exception(ErrorId, Format, Args):-
         format(atom(Message), Format, Args),
         throw(cql_error(ErrorId, Message)).
