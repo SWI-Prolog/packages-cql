@@ -47,7 +47,7 @@
           application_value_to_odbc_value/7,
           odbc_value_to_application_value/5,
           cql_transaction/3,
-          database_transaction_query_info/5,
+          database_transaction_query_info/3,
           transaction_active/0,
           register_database_connection_details/2,
           database_connection_details/2,
@@ -66,7 +66,7 @@
         database_event/6,
         transaction_active/0,
         transaction_context/4,
-        database_transaction_query_info/5.
+        database_transaction_query_info/3.
 
 :-multifile(cql:cql_transaction_context_hook/5).
 
@@ -307,7 +307,7 @@ cql_transaction(Schema, AccessToken, Goal):-
         thread_self(ThreadId),
         setup_call_cleanup(assert(transaction_active),
                            cql_transaction_1(Schema, AccessToken, Goal, DatabaseEventsSet),
-                           ( retractall(database_transaction_query_info(ThreadId, _, _, _,_)),
+                           ( retractall(database_transaction_query_info(ThreadId, _, _)),
                              retractall(transaction_context(_, _, _, _)),
                              retractall(database_event(_, _, _, _, _, _)),
                              flag(transaction_count, Count, Count+1),
@@ -334,6 +334,8 @@ cql_transaction_2(Schema, AccessToken, Goal, DatabaseEventsSet) :-
                                ; otherwise ->
                                    throw(no_dbms_for_schema(Schema))
                                ),
+                                 dbms(Schema, DBMS),
+                               store_transaction_info(AccessToken, Connection, DBMS, Goal),
                                get_time(ExecutionTime),
                                assert(transaction_context(TransactionId, AccessToken, ExecutionTime, Connection)),
 
@@ -427,7 +429,7 @@ resolve_deadlock(Goal) :-
                   ),
                   error(odbc('40001', _, _), _),
                   ( cql_log([debug(deadlocks)], warning, 'DEADLOCK_DETECTED\tThread \'~w\' selected as DEADLOCK VICTIM.  Goal:  ~w', [ThreadId, Goal]),
-                    retractall(database_transaction_query_info(ThreadId, _, _, _,_)),
+                    retractall(database_transaction_query_info(ThreadId, _, _)),
                     retractall(transaction_context(_, _, _, _)),
                     retractall(database_event(_, _, _, _, _, _)),
                     fail)),
@@ -450,7 +452,7 @@ maximum_deadlock_retries(10).
 %       log_transaction_state(+AccessToken, +TransactionId, +TransactionState)
 
 log_transaction_state(AccessToken, TransactionId, TransactionState) :-
-        access_token_to_user_id(AccessToken, UserId),
+        cql_access_token_to_user_id(AccessToken, UserId),
         upcase_atom(TransactionState, TransactionStateUc),
         cql_log([], informational, '\t~p\t~p\t~p', [UserId, TransactionId, TransactionStateUc]).
 
@@ -500,3 +502,13 @@ catch_all(A, B, C):- catch(A, B, C).
 
 
 process_database_events(_).
+
+:-multifile(cql:cql_transaction_info_hook/2).
+store_transaction_info(AccessToken, Connection, DBMS, Goal):-
+        ( cql:cql_transaction_info_hook(AccessToken, Connection, DBMS, Goal, Info)->
+            true
+        ; otherwise->
+            Info = {null}
+        ),
+        thread_self(ThreadId),
+        assert(database_transaction_query_info(ThreadId, Goal, Info)).

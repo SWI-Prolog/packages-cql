@@ -64,7 +64,7 @@
           cql_normalize_name/3,
           default_schema/1,
           odbc_execute_with_statistics/4,
-          access_token_to_user_id/2,
+          cql_access_token_to_user_id/2,
           dbms/2,
           odbc_data_type/4,
           primary_key_column_name/3,
@@ -2919,8 +2919,8 @@ top_level_restriction_cannot_refer_to_a_sub_query_attribute @
         \
         restriction_leaf(TopLevelQueryId, _, comparison(Lhs, _, Rhs))
         <=>
-        ( path_arg(_, Lhs, SubTerm)
-        ; path_arg(_, Rhs, SubTerm)),
+        ( cql_path_arg(_, Lhs, SubTerm)
+        ; cql_path_arg(_, Rhs, SubTerm)),
         SubTerm == attribute(Schema, TableAlias, AttributeName)
         |
         throw(format('Top level restriction cannot refer to a sub-query attribute : ~w', [AttributeName])).
@@ -5488,7 +5488,7 @@ identity_sql_server @
         ( integer(ScopeIdentity) ->
             Identity = ScopeIdentity,
             get_transaction_context(TransactionId, _, AccessToken, _, _),
-            access_token_to_user_id(AccessToken, UserId),
+            cql_access_token_to_user_id(AccessToken, UserId),
             cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
             throw_exception(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity])
@@ -5506,7 +5506,7 @@ identity_sqlite @
         ( integer(ScopeIdentity) ->
             Identity = ScopeIdentity,
             get_transaction_context(TransactionId, _, AccessToken, _, _),
-            access_token_to_user_id(AccessToken, UserId),
+            cql_access_token_to_user_id(AccessToken, UserId),
             cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
             throw_exception(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity])
@@ -5857,7 +5857,7 @@ execute_state_change_query @
                               Connection,
                               ( debug_before(Sql, Schema, OdbcParameters),
                                 identify_pre_state_change_values(QueryId, StateChangeType, Connection),
-                                access_token_to_user_id(AccessToken, UserId),
+                                cql_access_token_to_user_id(AccessToken, UserId),
                                 ( StateChangeType == insert,
                                   statistic_monitored_attribute(Schema, TableName, _) ->
                                     forall((statistic_monitored_attribute(Schema, TableName, MonitoredAttribute),
@@ -6217,7 +6217,7 @@ sql_constant([Code|Codes]) --> [Code], sql_constant(Codes).
 odbc_data_types_and_inputs(OdbcParameters, OdbcDataTypes, OdbcInputs) :-
         ( transaction_active ->
             get_transaction_context(TransactionId, _, AccessToken, TransactionTimestamp, _),
-            access_token_to_user_id(AccessToken, UserId)
+            cql_access_token_to_user_id(AccessToken, UserId)
 
         ; otherwise ->
             UserId = {null},
@@ -6477,7 +6477,7 @@ duplicate_attributes(StateChangeType,               % +
                      TableName,                     % +
                      AttributeNameValuePairs) :-    % +
         attribute_names(AttributeNameValuePairs, AttributeNames),
-        duplicates(AttributeNames, Duplicates),
+        cql_duplicates(AttributeNames, Duplicates),
         Duplicates \== [],
         throw(format('Duplicate attributes in CQL ~w: ~w', [StateChangeType, Schema:TableName:Duplicates])).
 
@@ -6604,7 +6604,7 @@ log_state_change @
         log_state_change(Sql, _, OdbcInputs)
         <=>
         get_transaction_context(TransactionId, _, AccessToken, _, _),
-        access_token_to_user_id(AccessToken, UserId),
+        cql_access_token_to_user_id(AccessToken, UserId),
         cql_log([],
                informational,
                'CQL\t~w\t~w\t   ~w\t~q\t(~w:~w)',
@@ -7369,7 +7369,7 @@ debug_before @
         HBindings = [],
 
         thread_self(ThreadId),
-        port_label(call, PortName, Colour),
+        cql_port_label(call, PortName, Colour),
 
         ( Mode == full ->
             format(atom(HumanSql), HSql, HBindings),
@@ -7414,7 +7414,7 @@ debug_after @
         Inferences is I2 - I1 - 5,   % ? How many to subtract for CHR?!
         functor(Reason, Port, _),
         thread_self(ThreadId),
-        port_label(Port, PortName, Colour),
+        cql_port_label(Port, PortName, Colour),
         ( memberchk(Port, [!, exit]) ->
             ( Outputs == [ignore_output] ->
                 ansi_format([], '[~w]  ~|', [ThreadId]),
@@ -8025,23 +8025,23 @@ cql_var_check(Var):-
 
 
 
-duplicates(List, SortedDuplicates):-
+cql_duplicates(List, SortedDuplicates):-
         msort(List, SortedList),
-        duplicates(SortedList, [], Duplicates),
+        cql_duplicates(SortedList, [], Duplicates),
         sort(Duplicates, SortedDuplicates).
 
-duplicates([], Duplicates, Duplicates) :- !.
-duplicates([_], Duplicates, Duplicates) :- !.
-duplicates([A, B|T1], Duplicates, T2) :-
+cql_duplicates([], Duplicates, Duplicates) :- !.
+cql_duplicates([_], Duplicates, Duplicates) :- !.
+cql_duplicates([A, B|T1], Duplicates, T2) :-
         A == B,
         !,
         ( memberchk(A, Duplicates) ->
-            duplicates(T1, Duplicates, T2)
+            cql_duplicates(T1, Duplicates, T2)
         ; otherwise->
-            duplicates(T1, [A|Duplicates], T2)
+            cql_duplicates(T1, [A|Duplicates], T2)
         ).
-duplicates([_|T1], Duplicates, T2) :-
-        duplicates(T1, Duplicates, T2).
+cql_duplicates([_|T1], Duplicates, T2) :-
+        cql_duplicates(T1, Duplicates, T2).
 
 
 map_database_atom(Keyword, Mapped):-
@@ -8053,16 +8053,16 @@ strip_sort_keys([], []).
 strip_sort_keys([_-Detail|T1], [Detail|T2]) :-
         strip_sort_keys(T1, T2).
 
-path_arg([], Term, Term).
-path_arg([Index|Indices], Term, SubTerm) :-
+cql_path_arg([], Term, Term).
+cql_path_arg([Index|Indices], Term, SubTerm) :-
         compound(Term),
 	arg(Index, Term, Arg),
-	path_arg(Indices, Arg, SubTerm).
+	cql_path_arg(Indices, Arg, SubTerm).
 
 
 
 :-multifile(cql_access_token_hook/2).
-access_token_to_user_id(X, Y):-
+cql_access_token_to_user_id(X, Y):-
         ( cql_access_token_hook(X, Y)->
             true
         ; otherwise->
@@ -8236,14 +8236,14 @@ data_type_length_precision_scale_1(int, integer, 10, {null}, {null}).
 data_type_length_precision_scale_1(DataType, DataType, {null}, {null}, {null}).
 
 
-port_label(unify,              'CALL  ', green).
-port_label(call,               'CALL  ', cyan).
-port_label(pending,            'EXIT  ', yellow).
-port_label(exit,               'EXIT  ', white).
-port_label(!,                  'EXIT !', white).
-port_label(fail,               'FAIL  ', magenta).
-port_label(exception,          'ERROR ', red).
-port_label(external_exception, 'ERROR ', red).
+cql_port_label(unify,              'CALL  ', green).
+cql_port_label(call,               'CALL  ', cyan).
+cql_port_label(pending,            'EXIT  ', yellow).
+cql_port_label(exit,               'EXIT  ', white).
+cql_port_label(!,                  'EXIT !', white).
+cql_port_label(fail,               'FAIL  ', magenta).
+cql_port_label(exception,          'ERROR ', red).
+cql_port_label(external_exception, 'ERROR ', red).
 
 
 %%      cql_update_history_hook(+Schema,
