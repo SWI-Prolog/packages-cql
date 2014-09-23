@@ -29,12 +29,12 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 
-    PostgreSQL is a trademark of the PostgreSQL Global Development Group. 
+    PostgreSQL is a trademark of the PostgreSQL Global Development Group.
     Microsoft, SQL Server, and Windows are either registered trademarks or
     trademarks of Microsoft Corporation in the United States and/or other
-    countries. 
+    countries.
     SQLite is a registered trademark of Hipp, Wyrick & Company, Inc in the United
-    States. 
+    States.
     All other trademarks or registered trademarks are the property of their
     respective owners.
 */
@@ -47,7 +47,7 @@
           application_value_to_odbc_value/7,
           odbc_value_to_application_value/5,
           cql_transaction/3,
-          database_transaction_query_info/5,          
+          database_transaction_query_info/5,
           transaction_active/0,
           register_database_connection_details/2,
           database_connection_details/2,
@@ -80,7 +80,7 @@ get_transaction_context(TransactionId, TrxId, AccessToken, TransactionTimestamp,
                 AccessToken = AccessToken_,
                 TransactionTimestamp = TransactionTimestamp_,
                 Connection = Connection_
-            
+
             ; otherwise ->
                 throw(no_database_transaction_active)
             )
@@ -92,7 +92,7 @@ get_transaction_context(TransactionId, TrxId, AccessToken, TransactionTimestamp,
 
 :-thread_local
         % odbc_connection_available(Schema, Connection)
-        odbc_connection_available/2,        
+        odbc_connection_available/2,
         % odbc_connection_in_use(Schema)
         odbc_connection_in_use/1.
 
@@ -114,11 +114,11 @@ odbc_connection_call(Schema, Connection, Goal) :-
           N >= MaxDbConnections ->
             thread_self(ThreadId),
             throw(too_many_schema_connections(MaxDbConnections, ThreadId))
-        
+
         ; database_connection_details(Schema, ConnectionDetails) ->
             ( ConnectionDetails = driver_string(DriverString) ->
                 true
-        
+
             ; ConnectionDetails = dsn(Dsn, Username, Password) ->
                 gethostname(HostName),
                 format(atom(DriverString), 'DSN=~w;UID=~w;PWD=~w;WSID=~w;', [Dsn, Username, Password, HostName])
@@ -126,7 +126,7 @@ odbc_connection_call(Schema, Connection, Goal) :-
             ; otherwise ->
                 throw(invalid_connection_details(ConnectionDetails))
             ),
-        
+
             odbc_connect(-,
                          Connection,
                          [driver_string(DriverString),
@@ -135,12 +135,12 @@ odbc_connection_call(Schema, Connection, Goal) :-
                           auto_commit(false),
                           wide_column_threshold(8000),
                           mars(true)]),    % In theory this is not needed following bug-5181 but see comment in predicate description
-        
+
             thread_at_exit(odbc_cleanup_and_disconnect(Connection)),
             assert(odbc_connection_available(Schema, Connection)),
-                        
+
             odbc_get_connection(Connection, dbms_name(DBMS)),
-            
+
             ( DBMS == 'Microsoft SQL Server',
               odbc_query(Connection, 'select @@SPID', row(SPID)) ->
                 true
@@ -151,7 +151,7 @@ odbc_connection_call(Schema, Connection, Goal) :-
             thread_self(ThreadId),
             assert(sql_server_spid(Connection, SPID, Schema, ThreadId)),
             odbc_connection_call(Schema, Connection, Goal)
-        
+
         ; otherwise ->
             throw(no_database_connection_details)
         ).
@@ -177,7 +177,7 @@ odbc_cleanup_and_disconnect(Connection) :-
                   ( thread_self(ThreadId),
                     cql_log([], error, '[~w] odbc_cleanup_and_disconnect/1 : ~w', [ThreadId, E]))).
 
-odbc_cleanup_and_disconnect_1(Connection) :-        
+odbc_cleanup_and_disconnect_1(Connection) :-
         thread_self(ThreadId),
         debug(odbc_cleanup, 'BEFORE [~w] : ~w', [ThreadId, odbc_end_transaction(Connection, rollback)]),
         odbc_end_transaction(Connection, rollback),
@@ -205,7 +205,7 @@ odbc_cleanup_and_disconnect_1(Connection) :-
         % This can be compiled with varchar(4) as the datatype, to get statement S,
         % If we then want to do a query where user_id = 'ERIC' we are going to get a runtime type error.
         % Ordinarily this isn't a problem because the domain is well-established at compile-time, but this
-        % is not the case when dealing with dynamic tables, specifically #cql_in. 
+        % is not the case when dealing with dynamic tables, specifically #cql_in.
         cached_prepared_odbc_statement/7.
 
 :-thread_local
@@ -218,7 +218,7 @@ max_lru_size(4000).
 % This is called with the current statement locked
 evict_cache_entries(_, 0):- !.
 evict_cache_entries(Key, N):-
-        N > 0,       
+        N > 0,
         retract(lru_statement(MutexId)),
         % This statement cannot be locked unless the cache size is extremely small, since we JUST cycled the current statement to the bottom of the stack
         ( statement_locked(MutexId)->
@@ -243,7 +243,7 @@ odbc_execute_with_statement_cache(Connection, _, _, Sql, OdbcParameters, OdbcPar
                            ( thread_self(ThreadId),
                              retract(lru_statement(MutexId)),
                              assertz(lru_statement(MutexId)),
-                             debug(odbc_statement_cache, 'CACHE-HIT [~w] ~w : ~@', [ThreadId, Statement, trimmed_sql(Sql, 80)]),                             
+                             debug(odbc_statement_cache, 'CACHE-HIT [~w] ~w : ~@', [ThreadId, Statement, trimmed_sql(Sql, 80)]),
                              odbc_execute_with_statistics(Statement, OdbcParameters, OdbcParameterDataTypes, Row)
                            ),
                            retract(statement_locked(MutexId))).
@@ -317,7 +317,7 @@ cql_transaction(Schema, AccessToken, Goal):-
 cql_transaction_1(Schema, AccessToken, Goal, DatabaseEventsSet):-
         ( transaction_context(ExistingTransactionId, _, _, _) ->
             throw(database_transaction_already_in_progress(ExistingTransactionId))
-        ; otherwise -> 
+        ; otherwise ->
             true
         ),
         resolve_deadlock(cql_transaction_2(Schema, AccessToken, Goal, DatabaseEventsSet)).
@@ -336,7 +336,7 @@ cql_transaction_2(Schema, AccessToken, Goal, DatabaseEventsSet) :-
                                ),
                                get_time(ExecutionTime),
                                assert(transaction_context(TransactionId, AccessToken, ExecutionTime, Connection)),
-                                 
+
                                ( cql_transaction_3(Goal, Connection, TransactionId, AccessToken, DatabaseEventsSet) ->
                                    true
                                ; otherwise ->
@@ -359,9 +359,9 @@ cql_transaction_3(Goal, Connection, TransactionId, AccessToken, DatabaseEventsSe
         % list_to_set/2 is NlogN and preserves order
         list_to_set(DatabaseEvents, DatabaseEventsSet),
         ( var(Error) ->
-            odbc_end_transaction(Connection, commit),  
+            odbc_end_transaction(Connection, commit),
             log_transaction_state(AccessToken, TransactionId, transaction_committed)
-        
+
         ; otherwise ->
             % odbc_connection_call/3 always rolls back so no need for explicit rollback here
             log_transaction_state(AccessToken, TransactionId, transaction_rolled_back_on_error),
@@ -388,12 +388,12 @@ cql_transaction_3(Goal, Connection, TransactionId, AccessToken, DatabaseEventsSe
 resolve_deadlock(Goal) :-
         thread_self(ThreadId),
         flag(transaction_count, InitialCount, InitialCount),
-        
+
         maximum_deadlock_retries(MaximumDeadlockRetries),
         between(1, MaximumDeadlockRetries, RetryCount),         % BTP for deadlock retry
-        
+
         ( RetryCount >= MaximumDeadlockRetries ->
-            cql_log([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_FAILED\tCOULD NOT RESOLVE deadlock on thread \'~w\'.  Goal:  ~w', [ThreadId, Goal]),  
+            cql_log([debug(deadlocks)], warning, 'DEADLOCK_RESOLUTION_FAILED\tCOULD NOT RESOLVE deadlock on thread \'~w\'.  Goal:  ~w', [ThreadId, Goal]),
             throw(deadlock_retry_count_exceeded(MaximumDeadlockRetries))
 
         ; RetryCount > 1 ->
@@ -404,11 +404,11 @@ resolve_deadlock(Goal) :-
             ; otherwise ->
                 Flag = another_transaction_completed
             )
-        
+
         ; otherwise ->
             Flag = no_deadlock
         ),
-        
+
         ( Flag == no_other_transaction_completed ->
             Delay is ( 2 << RetryCount) / 1000.0,         % Exponential backoff up to 2.048s
             sleep(Delay),
@@ -425,7 +425,7 @@ resolve_deadlock(Goal) :-
                   ; otherwise ->
                      true
                   ),
-                  error(odbc('40001', _, _), _),                  
+                  error(odbc('40001', _, _), _),
                   ( cql_log([debug(deadlocks)], warning, 'DEADLOCK_DETECTED\tThread \'~w\' selected as DEADLOCK VICTIM.  Goal:  ~w', [ThreadId, Goal]),
                     retractall(database_transaction_query_info(ThreadId, _, _, _,_)),
                     retractall(transaction_context(_, _, _, _)),
@@ -433,7 +433,7 @@ resolve_deadlock(Goal) :-
                     fail)),
         ( RetryCount > 1 ->
             cql_log([debug(deadlocks)], warning, 'DEADLOCK_RESOLVED\tdeadlocked transaction on thread \'~w\' RESOLVED (attempt ~w).', [ThreadId, RetryCount])
-        
+
         ; otherwise ->
             true
         ),
@@ -472,7 +472,7 @@ update_history(Schema, TableName, AttributeName, PrimaryKeyAttributeName, Primar
 
 %%      application_value_to_odbc_value(+ApplicationValue, +OdbcDataType, +Schema, +TableName, +ColumnName, +Qualifiers, -OdbcValue).
 :-multifile(cql:application_value_to_odbc_value_hook/7).
-application_value_to_odbc_value(ApplicationValue, OdbcDataType, Schema, TableName, ColumnName, Qualifiers, OdbcValue):-        
+application_value_to_odbc_value(ApplicationValue, OdbcDataType, Schema, TableName, ColumnName, Qualifiers, OdbcValue):-
         ( var(ApplicationValue)->
             throw(instantiation_error(ApplicationValue))
         ; cql:application_value_to_odbc_value_hook(OdbcDataType, Schema, TableName, ColumnName, Qualifiers, ApplicationValue, OdbcValue)->
@@ -481,7 +481,7 @@ application_value_to_odbc_value(ApplicationValue, OdbcDataType, Schema, TableNam
             OdbcValue = ApplicationValue
         ).
 
-        
+
 odbc_numeric_precision_limit(27).
 
 

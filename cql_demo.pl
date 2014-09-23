@@ -29,12 +29,12 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 
-    PostgreSQL is a trademark of the PostgreSQL Global Development Group. 
+    PostgreSQL is a trademark of the PostgreSQL Global Development Group.
     Microsoft, SQL Server, and Windows are either registered trademarks or
     trademarks of Microsoft Corporation in the United States and/or other
-    countries. 
+    countries.
     SQLite is a registered trademark of Hipp, Wyrick & Company, Inc in the United
-    States. 
+    States.
     All other trademarks or registered trademarks are the property of their
     respective owners.
 */
@@ -69,9 +69,9 @@ cql:application_value_to_odbc_value_hook(Type, _, _, _, _, Rational, Atom):-
 
 cql:odbc_value_to_application_value_hook(decimal(_,_), _, _, _, _, Value, Rational):-
         ( atom_prefix(Value, '.') ->
-            atom_concat('0', Value, NumericAtom)      
+            atom_concat('0', Value, NumericAtom)
         ; atom_concat('-.', Rest, Value) ->
-            atom_concat('-0.', Rest, NumericAtom)     
+            atom_concat('-0.', Rest, NumericAtom)
         ; otherwise ->
             NumericAtom = Value
         ),
@@ -102,7 +102,7 @@ demo:-
         writeln('Select back data with join again'),
         forall(join_select(X),
                writeln(decimal_value=X)).
-        
+
 
 
 simple_select(X):-
@@ -152,7 +152,7 @@ splunge(GlAccountingDate):-
           se_lt_z :: [i-FromGlAccountingDate],
           FromGlAccountingDate =< GlAccountingDate} ->
            true
-        ; 
+        ;
          true).
 
 

@@ -28,12 +28,12 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 
-    PostgreSQL is a trademark of the PostgreSQL Global Development Group. 
+    PostgreSQL is a trademark of the PostgreSQL Global Development Group.
     Microsoft, SQL Server, and Windows are either registered trademarks or
     trademarks of Microsoft Corporation in the United States and/or other
-    countries. 
+    countries.
     SQLite is a registered trademark of Hipp, Wyrick & Company, Inc in the United
-    States. 
+    States.
     All other trademarks or registered trademarks are the property of their
     respective owners.
 
@@ -115,7 +115,7 @@ Because we have truncation, the order of operations is crucial: Although (x * y)
        * Transforming the views is relatively simple once we have the tree isolated. This can allow us to customize views to take advantage of features in later version of SQL Server while not alienating clients using older versions
        * If necessary, we can translate views to run on other DBMS, such as Oracle, 'PostgreSQL' or MySQL
 
----+ Known problems       
+---+ Known problems
 % It is not practical to determine what + means ahead of time if the source view is MS T-SQL. We would have to guess and backtrack if wrong, and that is horribly inefficient. Instead if we read + in 'Microsoft SQL Server' mode, we should delay determining whether it is really + or actually || until the types of the LHS and RHS are resolved.
 */
 
@@ -191,10 +191,10 @@ sql_gripe_level(N):-
             N = 0 % FIXME: Should be 1, Testing only
         ),
         assert(cached_gripe_level(N)).
-      
+
 
 stream_to_tokens(Stream, Tokens):-
-        stream_to_lazy_list(Stream, List),        
+        stream_to_lazy_list(Stream, List),
         sql_tokens(Tokens, List, []), !.
 
 
@@ -203,7 +203,7 @@ sql_parse(Head, TrailingComments, Options, Tokens):-
         reverse(Tokens, TR),
         trailing_comments_reversed(TR, TrailingCommentsReversed, Tail),
         reverse(Tail, TokensWithoutTrailingComments),
-        reverse(TrailingCommentsReversed, TrailingComments),        
+        reverse(TrailingCommentsReversed, TrailingComments),
         Goal =.. [Functor, TokensWithoutTrailingComments, [], [query_id(QueryId)|Options], _, 0, _, Arg, T1 |Args],
         Goal,
         !,
@@ -214,7 +214,7 @@ sql_parse(Head, TrailingComments, Options, Tokens):-
         consolidate_errors(Arg),
         cleanup(QueryId),
         true.
-                
+
 
 map_nulls_to_ints([], []):- !.
 map_nulls_to_ints([merged(A, _, N)|As], [A-native_type(int)|Bs]):-
@@ -229,7 +229,7 @@ map_nulls_to_ints([merged(A, _, AT)|As], [A-AT|Bs]):-
 trailing_comments_reversed([], [], []):- !.
 trailing_comments_reversed([comment(A,B)|In], [comment(A,B)|More], Tail):- !,
         trailing_comments_reversed(In, More, Tail).
-trailing_comments_reversed(Tail, [], Tail):- !.                      
+trailing_comments_reversed(Tail, [], Tail):- !.
 
 term_expansion(OldHead ---> OldBody, NewHead :- NewBody):-
         OldHead =.. [Functor, A1|Args],
@@ -270,7 +270,7 @@ transform_body(!, InOut, InOut, _, C, C, C1, C2, P0, P0, (!, C1 = C2)):- !.
 transform_body(@Functor, In, Out, Source, C, C, C1, C2, P0, P0, get_token(Token, C, C1, C2, In, Out)):- Functor =.. [Token, Source], !.
 transform_body(@Token, In, Out, _, C, C, C1, C2, P0, P0, get_token(Token, C, C1, C2, In, Out)):- !.
 transform_body(#Identifier : Type, In, Out, _, C, C, C1, C2, P0, P0, get_identifier(Identifier, Type, C, C1, C2, In, Out)):-!.
-transform_body(#Identifier, In, Out, _, C, C, C1, C2, P0, P0, get_identifier(Identifier, any, C, C1, C2, In, Out)):-!.        
+transform_body(#Identifier, In, Out, _, C, C, C1, C2, P0, P0, get_identifier(Identifier, any, C, C1, C2, In, Out)):-!.
 
 transform_body((A | B), In, Out, Source, CIn, COut, C1, C2, P0, P1, (C, COut = COut1, P1 = P1a ; D, COut = COut2, P1 = P1b)):-
         !,
@@ -430,7 +430,7 @@ table_name(table(Name))---> qualified_name(Name).
 view_column_list(List)---> column_name_list(List).
 query_expression(Term, T)--->
         qid(Qid),
-        non_join_query_term(LHS, LT), 
+        non_join_query_term(LHS, LT),
         ( @union, (@all, {Term = union_all(LHS, RHS, Corresponding)} | {Term = union(LHS, RHS, Corresponding)}), (corresponding_spec(Corresponding) | {Corresponding = {no_corresponding}}), set_qid(SubQid), query_expression(RHS, RT), {peer_query(Qid, SubQid), union_type(Qid, LT, RT, T)}
         | @except, (@all, {Term = except_all(LHS, RHS, Corresponding)} | {Term = except(LHS, RHS, Corresponding)}), (corresponding_spec(Corresponding) | {Corresponding = {no_corresponding}}), query_expression(RHS, RT), {union_type(Qid, LT, RT, T)}
         | {Term = LHS, T = LT}).
@@ -440,11 +440,11 @@ non_join_query_term(Term, T)---> (non_join_query_primary(LHS, LT) | free_joined_
 non_join_query_primary(Primary, T)---> (simple_table(Primary, T) | @left_paren, query_expression(Primary, T), @right_paren).
 simple_table(Table, T)---> query_specification(Query, T), {Table = query(Query)} | table_value_constructor(Values, T), {Table = values(Values)} | explicit_table(Explicit), {Table = explicit_table(Explicit), T = {fixme1}}.
 query_specification(select(Q, Selections, Source, Limit, For), QueryType)--->
-        @select, ( set_quantifier(Q) | {Q = {no_quantifier}} ), [ dbms('Microsoft SQL Server'), top_clause(Limit) ],                
+        @select, ( set_quantifier(Q) | {Q = {no_quantifier}} ), [ dbms('Microsoft SQL Server'), top_clause(Limit) ],
                 select_list(Selections, Sources, Types), table_expression(Source), [dbms('PostgreSQL'), limit_clause(Limit)], {var(Limit)->Limit = {no_limit} ; true},
                 ( dbms('Microsoft SQL Server'), for_clause(For), get_source(S1), {semantic_error(for_clause, S1, 2)} | {For = {no_for}}),
                 {(strip_sql_comments(Selections, S), merge_types(S, Sources, Types, QueryType)-> true ; throw(failed_to_resolve))}.
-select_list(N, S, T)---> (@asterisk, qid(Qid), get_source(Source), {N = all, find_all_column_types(Qid, Source, T1), frozen_reverse(Qid, T1, T)} | select_list_1(N, S, T)). 
+select_list(N, S, T)---> (@asterisk, qid(Qid), get_source(Source), {N = all, find_all_column_types(Qid, Source, T1), frozen_reverse(Qid, T1, T)} | select_list_1(N, S, T)).
 select_list_1([Head|Tail], [Source|Sources], [Type|Types])---> select_sublist(Head, Source, Type), (@comma, select_list_1(Tail, Sources, Types) | {Tail = [], Sources = [], Types = []}).
 select_sublist(S, Source, Type)---> get_source(Source), derived_column(Column, Type), {S = Column} | qualifier(Qualifier), @period, @asterisk, {S = all(Qualifier), Type = {fixme3}}.
 derived_column(derived_column(Column, As), Type)---> (illegal_null_specification(Column, Type) | value_expression(Column, Type)), (as_clause(As) | {As = {no_alias}}). % Added @null to allow for SELECT NULL AS foo, since null is not a value
@@ -491,12 +491,12 @@ cross_join_rhs(Reference)---> @cross, @join, table_reference(Reference).
 qualified_join_rhs(Type, Reference, Spec)---> ( @natural, {Type = natural(T1)} | {Type = T1} ), ( join_type(T1) | {T1 = join} ), (@join), table_reference(Reference), ( join_specification(Spec) | {Spec = {no_on}} ).
 free_joined_table(Table, {fixme4})---> table_reference(Table).
 join_type(join_type(Type))---> (@inner, {Type = inner} | outer_join_type(T1), {Type = outer(T1)}, [ @outer ] | @union, {Type = union}).
-outer_join_type(T)---> (@left, {T=left} | @right, {T=right} | @full, {T=full}). 
+outer_join_type(T)---> (@left, {T=left} | @right, {T=right} | @full, {T=full}).
 join_specification(Spec)---> ( join_condition(Spec) | named_columns_join(Spec) ).
 join_condition(on(On)) ---> @on, search_condition(On).
 named_columns_join(columns(Columns))---> @using, @left_paren, join_column_list(Columns), @right_paren.
 join_column_list(Columns)---> column_name_list(Columns).
-set_quantifier(Q)---> ( @distinct, {Q = distinct} | @all, {Q = all} ). 
+set_quantifier(Q)---> ( @distinct, {Q = distinct} | @all, {Q = all} ).
 where_clause(where(Where))---> @where, search_condition(Where).
 corresponding_spec(Columns)---> @corresponding, ( @by, @left_paren, corresponding_column_list(Columns), @right_paren | {Columns = {no_columns}} ).
 corresponding_column_list(List)---> column_name_list(List).
@@ -568,17 +568,17 @@ determine_operation_from_types(Type, LT, RT, Op, LHS, RHS, V):-
             % the cases that exist as a workaround
             ; LTT = native_type(datetime),
               RTT = native_type(decimal(_,_))->
-                V = add_interval(LHS, negative(RHS))            
+                V = add_interval(LHS, negative(RHS))
             ; otherwise->
                 V = subtract(LHS, RHS)
             )
         ).
-            
+
 
 native_type_of_type(native_type(X), native_type(X)):- !.
 native_type_of_type(domain(D), native_type(X)):-
         fetch_domain_data_type(D, X).
-        
+
 term(V, T)---> get_source(LS), factor(LHS, LT), ((@asterisk, {V = multiply(LHS, RHS), Op = multiply} | @solidus, {V = divide(LHS, RHS), Op = divide(RT)}), get_source(RS), term(RHS, RT), {T = node(LT, LS, Op, RT, RS)} | {V = LHS, T = LT}).
 factor(V, T)---> ( (@plus_sign, {V = positive(N)} | @minus_sign, dbms(DBMS), {V = negative(N), (DBMS == 'Microsoft SQL Server' -> force_type_not_domain(T) ; true)}) | { V = N} ), numeric_primary(N, T). % Quirk. This is in contradiction to the T-SQL Reference, but confirmed.
 numeric_primary(N, T)---> value_expression_primary(N, T) | numeric_value_function(N, T).
@@ -706,8 +706,8 @@ national_character_string_type(nchar_type(Length))--->
 bit_string_type(bit_type(Length))---> @bit, [ @left_paren, length(Length), @right_paren ]  | @bit, @varying, [ @left_paren, length(Length), @right_paren ].
 numeric_type(Type)---> exact_numeric_type(Type) | approximate_numeric_type(Type).
 exact_numeric_type(Type)---> @numeric, {Type = decimal(Precision, Scale)}, ( @left_paren, precision(Precision), ( @comma, scale(Scale) | {Scale = {no_scale}}), @right_paren | default_precision_and_scale(Precision, Scale))
-	| 	@decimal, {Type = decimal(Precision, Scale)}, ( @left_paren, precision(Precision), ( @comma, scale(Scale) | {Scale = {no_scale}}), @right_paren | default_precision_and_scale(Precision, Scale) )
-	| 	@dec, {Type = decimal(Precision, Scale)}, ( @left_paren, precision(Precision), ( @comma, scale(Scale) | {Scale = {no_scale}}), @right_paren | default_precision_and_scale(Precision, Scale) )
+	|	@decimal, {Type = decimal(Precision, Scale)}, ( @left_paren, precision(Precision), ( @comma, scale(Scale) | {Scale = {no_scale}}), @right_paren | default_precision_and_scale(Precision, Scale) )
+	|	@dec, {Type = decimal(Precision, Scale)}, ( @left_paren, precision(Precision), ( @comma, scale(Scale) | {Scale = {no_scale}}), @right_paren | default_precision_and_scale(Precision, Scale) )
 	|	@integer, {Type = int}
 	|	@int, {Type = int}
 	|	@smallint, {Type = smallint}
@@ -720,7 +720,7 @@ datetime_value_expression(V, T)---> (datetime_term(LHS, LT) | interval_value_exp
 order_by_clause(order_by(List))---> @order, @by, get_source(Source), check_order_by_is_in_top_query(Source), sort_specification_list(List).
 sort_specification_list([Head|Tail])---> sort_specification(Head), ( @comma, sort_specification_list(Tail) | {Tail = []}).
 sort_specification(sort_key(Key, Collate, Order))---> sort_key(Key), ( collate_clause(Collate) | {Collate = {no_collation}} ), ( ordering_specification(Order) | {Order = {no_order}} ).
-% According to SQL92, a sort_key is a column_reference. In SQL99, however, it is a value_expression, which is quite a bit easier. 
+% According to SQL92, a sort_key is a column_reference. In SQL99, however, it is a value_expression, which is quite a bit easier.
 %sort_key(Key)---> column_reference(C, _), {Key = sort_column(C)} | #I : int(_), {Key = index(I)}.
 sort_key(Key)---> value_expression(C, _), {Key = sort_column(C)} | #I : int(_), {Key = index(I)}.
 ordering_specification(S)---> @asc, {S = asc} | @desc, {S = desc}.
@@ -945,7 +945,7 @@ crush_subquery_into_scalar @
         <=>
         sql_explain(crush_subquery),
         type_constraint(QueryId, Source, Type, Subtype).
-                       
+
 concatenate_char @
         type_merge_hint(Type, Hint),
         type_constraint(QueryId, Source1, Type, native_type(varchar(N))),
@@ -1061,7 +1061,7 @@ union_nchar_and_varchar @
         ),
         sql_explain(union_nchar_and_varchar),
         merge_sources(Source1, Source2, Source),
-        type_constraint(QueryId, Source, Type, native_type(nvarchar(Z))),        
+        type_constraint(QueryId, Source, Type, native_type(nvarchar(Z))),
         type_constraint_ready(QueryId, Type).
 
 
@@ -1086,7 +1086,7 @@ expand_precision_integer_to_general_integer @
 
 
 expand_integer_to_decimal @
-        type_merge_hint(Type, union),                
+        type_merge_hint(Type, union),
         type_constraint(QueryId, Source1, Type, native_type(decimal(_, _)))
         \
         type_constraint(QueryId, Source2, Type, native_type(int))
@@ -1136,12 +1136,12 @@ quirk_tinyint_and_varchar_is_tinyint @
 max_varchars @
         type_constraint(QueryId, _, Type, native_type(varchar(A)))
         \
-        type_merge_hint(Type, max),                
+        type_merge_hint(Type, max),
         type_constraint(QueryId, _, Type, native_type(varchar(B)))
         <=>
         integer(A), integer(B), A >= B
         |
-        sql_explain(max_varchars),                
+        sql_explain(max_varchars),
         type_constraint_ready(QueryId, Type).
 
 max_nvarchar_with_varchar @
@@ -1158,7 +1158,7 @@ max_nvarchar_with_varchar @
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(nvarchar(C))),
         type_constraint_ready(QueryId, Type).
-        
+
 
 str_expression_with_int @
         type_merge_hint(Type, str),
@@ -1204,14 +1204,14 @@ quirk_datetime_and_int_is_int @
         type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(int))
         <=>
-        sql_explain(datetime_and_int),                
+        sql_explain(datetime_and_int),
         type_constraint_ready(QueryId, Type).
 
 %Quirk
 quirk_datetime_and_precision_int_is_precision_int @
         type_constraint(QueryId, _, Type, native_type(datetime))
         \
-        type_merge_hint(Type, _),                
+        type_merge_hint(Type, _),
         type_constraint(QueryId, _, Type, native_type(int(_)))
         <=>
         sql_explain(datetime_and_precision_int),
@@ -1221,12 +1221,12 @@ quirk_datetime_and_precision_int_is_precision_int @
 integer_addition @
         type_constraint(QueryId, _, Type, native_type(int))
         \
-        type_merge_hint(Type, Hint),                
+        type_merge_hint(Type, Hint),
         type_constraint(QueryId, _, Type, native_type(int))
         <=>
         memberchk(Hint, [add, subtract, concatenate])
         |
-        sql_explain(integer_addition),                
+        sql_explain(integer_addition),
         type_constraint_ready(QueryId, Type).
 
 integer_multiplication_requires_promotion @
@@ -1236,9 +1236,9 @@ integer_multiplication_requires_promotion @
         <=>
         memberchk(Hint, [multiply, divide(_)])
         |
-        sql_explain(promote_int_for_multiplication),                                
+        sql_explain(promote_int_for_multiplication),
         type_constraint(QueryId, Source, Type, native_type(decimal(10,0))).
-        
+
 
 integer_and_decimal_arithmetic @
         type_merge_hint(Type, Hint),
@@ -1251,7 +1251,7 @@ integer_and_decimal_arithmetic @
         sql_explain(promote_int_to_decimal_for_arithmetic(Hint)),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(decimal(10,0))).
-        
+
 
 expand_type_scope_decimal_with_hint @
         type_merge_hint(Type, Hint),
@@ -1284,7 +1284,7 @@ expand_type_scope_decimal_with_hint @
             ),
             ( ( ( V = int(P1), S1 == 0) % Promoted from int(P1) -> decimal(P1, 0)
               ;
-                V == decimal(P1, S1))->                
+                V == decimal(P1, S1))->
 
                 % Oops, round the wrong way!
                 P is P2 - S2 + S1 + max(6, S2 + P1 + 1),
@@ -1302,7 +1302,7 @@ expand_type_scope_decimal_with_hint @
         ),
         ( P > 38 ->
             Px = 38,
-            % I determined this for addition by trial and error :-(           
+            % I determined this for addition by trial and error :-(
             % For multiplication, see http://blogs.msdn.com/b/sqlprogrammability/archive/2006/03/29/564110.aspx
             % eg SELECT (cast(1 as decimal(38, 6))) - (cast(1 as decimal(14, 2)))
             ( memberchk(Hint, [add, concatenate, subtract])->
@@ -1361,7 +1361,7 @@ union_of_type_decimal_domains_is_not_a_domain @
         fetch_domain_data_type(D1, decimal(A1, A2)),
         fetch_domain_data_type(D2, decimal(B1, B2))
         |
-        sql_explain(union_domains),                
+        sql_explain(union_domains),
         most_general_type(QueryId, Source1, Source2, decimal(A1, A2), decimal(B1, B2), union, Type),
         commit(QueryId).
 
@@ -1386,7 +1386,7 @@ merge_domains @
         ; otherwise->
             most_general_type(QueryId, Source1, Source1, T1, T2, Hint, Type)
         ),
-        sql_explain(join_domains_for(Hint, D1, D2, Type)),                
+        sql_explain(join_domains_for(Hint, D1, D2, Type)),
         commit(QueryId).
 
 merge_domain_to_native @
@@ -1397,7 +1397,7 @@ merge_domain_to_native @
         <=>
         fetch_domain_data_type(D, T)
         |
-        sql_explain(join_domain_to_native),                
+        sql_explain(join_domain_to_native),
         most_general_type(QueryId, Source1, Source2, T, NT, Hint, Type),
         commit(QueryId).
 
@@ -1407,7 +1407,7 @@ drop_nulltype_in_favour_of_domain @
         type_constraint(QueryId, Source1, Type, domain(D)),
         type_constraint(QueryId, Source2, Type, {nulltype})
         <=>
-        sql_explain(drop_nulltype_for_domain),                
+        sql_explain(drop_nulltype_for_domain),
         fetch_domain_data_type(D, T),
         merge_sources(Source1, Source2, Source),
         type_constraint(QueryId, Source, Type, native_type(T)),
@@ -1480,7 +1480,7 @@ force_type_not_domain @
         |
         sql_explain(forcing_datetime_not_domain(D)),
         type_constraint(QueryId, Source, Type, native_type(datetime)).
-        
+
 
 rounded_int_is_decimal @ /* is it? */
         type_merge_hint(Type, round),
@@ -1544,7 +1544,7 @@ union_precision_ints @
 union_identical_natives @
         type_constraint(QueryId, _, Type, native_type(T))
         \
-        type_merge_hint(Type, union),        
+        type_merge_hint(Type, union),
         type_constraint(QueryId, _, Type, native_type(T))
         <=>
         sql_explain(union_identical_natives(T)),
@@ -1576,7 +1576,7 @@ accept_domain @
         <=>
         sql_explain(accepting(domain(Domain), Type)),
         Type = domain(Domain).
-        
+
 accept_native_type @
         type_constraint(QueryId, _, Type, native_type(Native)),
         type_constraint_ready(QueryId, Type)
@@ -1596,7 +1596,7 @@ find_column_types @
         query_table(QueryId, _, identifier(_, TableName)),
         find_all_column_types(QueryId, Source, Tail)
         <=>
-        default_schema(Schema),      
+        default_schema(Schema),
         findall(merged(ColumnName, Source, Domain),
                 fetch_database_attribute(_, Schema, TableName, ColumnName, Domain, _, _, _),
                 Columns),
@@ -1706,9 +1706,9 @@ resolve_union_type(QueryId, [merged(NameA, SourceA, TypeA)|As], [merged(NameB, S
             name_from_identifier(NameA, Name)
         ),
         resolve_union_type(QueryId, As, Bs, Cs).
-        
 
-name_from_identifier(literal(NameMC, _), Name):- !,        
+
+name_from_identifier(literal(NameMC, _), Name):- !,
         downcase_atom(NameMC, Name).
 name_from_identifier({no_alias}, {no_alias}):- !.
 name_from_identifier(Identifier, Name):-
@@ -1744,7 +1744,7 @@ most_general_type(QueryId, S1, S2, A, B, Op, C):-
                 type_constraint(QueryId, S2, C, domain(BBB))
             ; BB == {nulltype}->
                 type_constraint(QueryId, S2, C, {nulltype})
-            ; otherwise->                
+            ; otherwise->
                 type_constraint(QueryId, S2, C, native_type(BB))
             )
         ).
@@ -1759,7 +1759,7 @@ coalesce_type(QueryId, [A, B|Xs], [S1, S2|Ss], T):-
         most_general_type(QueryId, S1, S2, A, B, union, AB),
         coalesce_type(QueryId, Xs, Ss, XT),
         most_general_type(QueryId, S2, S2, AB, XT, union, T).
-        
+
 concatenate_type(QueryId, S1, S2, A, B, C):-
         type_merge_hint(C, concatenate),
         type_constraint(QueryId, S1, C, A),
@@ -1804,9 +1804,9 @@ determine_tables(_, X):- throw(determine_tables(X)).
 
 create_derived_table(_QueryId, _DerivedTableName, []):- !.
 create_derived_table(QueryId, DerivedTableName, [merged(Name, _, Type)|Columns]):- !,
-        derived_query_column(QueryId, DerivedTableName, Name, Type), 
+        derived_query_column(QueryId, DerivedTableName, Name, Type),
         create_derived_table(QueryId, DerivedTableName, Columns).
-        
+
 % Explicitly named domains in views MAY have a schema. Just ignore it
 fetch_domain_data_type(identifier(_, Domain), Type):-
         !,
@@ -1875,7 +1875,7 @@ resolve_factored_types(Qid, node(A, AS, Op, B, BS), T):- !,
         most_general_type(Qid, AS, BS, AT, B, Op, T),
         resolve_factored_types(Qid, A, AT).
 resolve_factored_types(_Qid, T, T).
-        
+
 % Turn an LR node/3 tree into an LL node/3 tree
 left_factor2(A, A):- var(A), !.
 left_factor2(node(A, AS, Op, B, BS), Y):- !, left_factor_appending2(B, BS, A, AS, Op, Y).

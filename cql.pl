@@ -29,12 +29,12 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 
-    PostgreSQL is a trademark of the PostgreSQL Global Development Group. 
+    PostgreSQL is a trademark of the PostgreSQL Global Development Group.
     Microsoft, SQL Server, and Windows are either registered trademarks or
     trademarks of Microsoft Corporation in the United States and/or other
-    countries. 
+    countries.
     SQLite is a registered trademark of Hipp, Wyrick & Company, Inc in the United
-    States. 
+    States.
     All other trademarks or registered trademarks are the property of their
     respective owners.
 */
@@ -53,7 +53,7 @@
           cql_post_state_change_select_sql/4,
           cql_pre_state_change_select_sql/7,
           cql_runtime/7,
-          cql_update_history_hook/16,          
+          cql_update_history_hook/16,
           cql_set_module_default_schema/1,
           cql_show/2,
           cql_state_change_statistics_sql/8,
@@ -103,7 +103,7 @@
                           cql_transaction/3]).
 
 
-/** <module> CQL - Constraint Query Language 
+/** <module> CQL - Constraint Query Language
 
 Note that CQL is currently in a state of flux. Features may be dropped in future releases, and the generated SQL may change
 between releases. In particular, _|runtime|_ mode is deprecated.
@@ -133,10 +133,10 @@ In the course of executing a select query, the following rules are applied:
 
    1. Any selected attribute that is null does not bind its associated variable.
    2. Just before returning from the query any select variables that are still free are bound to {null}.
-                     
+
 This is so we can handle outer joins.  Consider this:
 
-==                     
+==
 x :: [a-A] *== y :: [a-A]
 ==
 
@@ -144,7 +144,7 @@ Assume x.a binds A to a non-null value.  If there is no matching row in y, then 
 the query could never succeed.  By not binding the variable associated with y.a the query can succeed ( rule 1) and A will be bound to
 the value in x.a.
 
----++ Getting Started Quickly           
+---++ Getting Started Quickly
 Here is a simple example of a SQL SELECT from the table se_lt_x
 ==
 test(A) :-
@@ -158,7 +158,7 @@ test(A) :-
    * The CQL is distinguished from the ordinary Prolog by appearing in curly brackets
    * Prolog variables which are ground when the CQL is executed will appear in the resulting SQL as part of the WHERE clause
 
-Comparisons can be done in-line e.g. 
+Comparisons can be done in-line e.g.
 ==
 [a-'ELSTON_M']
 ==
@@ -184,7 +184,7 @@ You can debug CQL using the meta-predicates ?/1, ??/2 and ???/3:
   $ ?/1 : Display a summary form of the generated SQL before and after the goal is called.
   ==
   [main]  CALL   SELECT slx_2.b, slx_2.a  FROM se_lt_x AS slx_2 WHERE slx_2.a = 'ELSTON_M'
-  [main]  EXIT   SELECT slx_2.b, slx_2.a  FROM se_lt_x AS slx_2 WHERE slx_2.a = 'ELSTON_M' (0.006963s, 0.01cpu, 3,899 inferences) 
+  [main]  EXIT   SELECT slx_2.b, slx_2.a  FROM se_lt_x AS slx_2 WHERE slx_2.a = 'ELSTON_M' (0.006963s, 0.01cpu, 3,899 inferences)
   ==
 
   $ ??/1 : Display the exact query (and results) in a format which can be executed directly by the DBMS (In this case, SQL Server)
@@ -194,7 +194,7 @@ You can debug CQL using the meta-predicates ?/1, ??/2 and ???/3:
   DECLARE @P0 VARCHAR(50);
   SET @P0 = 'ELSTON_M';
   SELECT slx_450.b,
-         slx_450.a 
+         slx_450.a
   FROM se_lt_x AS slx_450
   WHERE slx_450.a = @P0 AND slx_450.a COLLATE Latin1_General_CS_AS = @P0
   Result: se_lt_x.b = {null}
@@ -205,9 +205,9 @@ You can debug CQL using the meta-predicates ?/1, ??/2 and ???/3:
 
   $ ???/1 : Display simplified SQL before the goal is called and display the results afterwards
   ==
-  [main]  CALL  
+  [main]  CALL
   SELECT slx_450.b,
-         slx_450.a 
+         slx_450.a
   FROM se_lt_x AS slx_450
   WHERE slx_450.a = 'ELSTON_M'
   Result: se_lt_x.b = {null}
@@ -216,7 +216,7 @@ You can debug CQL using the meta-predicates ?/1, ??/2 and ???/3:
   ==
 
 
----++ Prolog Variables           
+---++ Prolog Variables
 A Prolog variable can be simultaneously a _|SELECT|_ variable, a _|JOIN|_ variable and a
 _|WHERE|_ variable as A is in the following example:
 ==
@@ -250,11 +250,11 @@ sum_test :-
                 sum(b)-Summation]
    =*=
    #se_lt_y :: [e-ValueB],
-   
+
    ValueA == ValueB,   % Explicit join point
-   
+
    group_by([ValueA])},
-  
+
   writeln(ValueA-ValueB-Summation).
 ==
 
@@ -263,7 +263,7 @@ sum_test :-
 true ;
 ==
 
----++ Special Attributes         
+---++ Special Attributes
 The following attributes are automatically provided i.e if the attribute is present in the table, CQL will automatically fill in the value:
 
    1. *|generation_|* Set to 0 on INSERT and incremented by 1 on each update
@@ -280,23 +280,23 @@ The following attributes are automatically provided i.e if the attribute is pres
 
 All the special attributes can be overridden by supplying the attribute-value pair explicitly.
 
----++ Examples           
+---++ Examples
 Rather than provide an abstract description of CQL syntax here is a set of
 examples that show how to use it.
 
----+++ Simple INSERT           
+---+++ Simple INSERT
 ==
 {[],
  insert(se_lt_x, [a-'A', b-'B', c-100])}
 ==
 
----+++ Simple INSERT with retrieval of identity of the inserted row           
+---+++ Simple INSERT with retrieval of identity of the inserted row
 ==
 {[],
  insert(se_lt_x, [a-'A', b-'B', c-100]),
  identity(I)}
 ==
----+++ Simple DELETE           
+---+++ Simple DELETE
 ==
 {[],
  delete(se_lt_x, [x_pk-I])}
@@ -307,7 +307,7 @@ I could have made delete consisent with update, but this would have required the
  table where the rows are to be deleted).  This seems like overkill because a delete can in fact refer to only one table anyway i.e.
 you can't identify rows to delete via a JOIN.
 
----+++ Simple SELECT           
+---+++ Simple SELECT
 ==
 {[],
  se_lt_x :: [a-A, b-B]}
@@ -320,7 +320,7 @@ This query will either:
    * If B is bound and A is unbound, bind A to each of the values in se_lt_x.a where se_lt_x.b = B
    * If A and B are both unbound, bind A and B to each of the tuples in se_lt_x.
 
----+++ Simple UPDATE           
+---+++ Simple UPDATE
 ==
 {[],
  update(se_lt_x, [c-100]),
@@ -330,14 +330,14 @@ This query will either:
 This corresponds to UPDATE se_lt_x SET c=100 WHERE se_lt_x.a='A1'.  The '@' is a special alias referring to the table that is being updated.
 The row_count/1 term gives the number or rows updated.
 
----+++ WHERE with arithmetic comparison           
+---+++ WHERE with arithmetic comparison
 ==
 {[],
  se_lt_x :: [a-A, c-C],
  C > 10}
 ==
 
----+++ Simple INNER JOIN           
+---+++ Simple INNER JOIN
 ==
 {[],
  se_lt_x :: [a-J1, c-C]
@@ -347,7 +347,7 @@ The row_count/1 term gives the number or rows updated.
 The join is se_lt_x.a = se_lt_y.d because of the shared variable J1.  se_lt_x.c will be
 returned in C and se_lt_y.f will be returned in F
 
----+++ Arithmetic UPDATE with an INNER JOIN and a WHERE restriction           
+---+++ Arithmetic UPDATE with an INNER JOIN and a WHERE restriction
 ==
 {[],
  update(se_lt_x, [c-(C + 2 * F + 20)]),
@@ -357,26 +357,26 @@ returned in C and se_lt_y.f will be returned in F
 This joins the table being updated (table se_lt_x) on table se_lt_y where se_lt_x.a = se_lt_y.a and
 where se_lt_x.c < 200 then updates each identified row se_lt_x.c with the specified expression.
 
----+++ Confirm row does not exist           
+---+++ Confirm row does not exist
 ==
 \+ exists {[], se_lt_x :: [a-'Z']}
 ==
 
----+++ Aggregation - Count           
+---+++ Aggregation - Count
 ==
 {[],
  se_lt_x :: [count(c)-C]}
 ==
 This will count the rows in table se_lt_x
 
----+++ Aggregation - Sum           
+---+++ Aggregation - Sum
 ==
 {[],
  se_lt_x :: [sum(c)-C]}
 ==
 Sum the values of attribute c in table se_lt_x
 
----+++ Aggregation - Average           
+---+++ Aggregation - Average
 ==
 {[],
  se_lt_x :: [avg(c)-C]}
@@ -384,7 +384,7 @@ Sum the values of attribute c in table se_lt_x
 
 Calculate the mean of the values of attribute c in table se_lt_x
 
----+++ Maximum Value           
+---+++ Maximum Value
 ==
 {[],
  se_lt_x :: [max(c)-C]}
@@ -392,7 +392,7 @@ Calculate the mean of the values of attribute c in table se_lt_x
 
 Calculate the maximum of the values of attribute c in table se_lt_x
 
----+++ Minimum Value           
+---+++ Minimum Value
 ==
 {[],
  se_lt_x :: [min(c)-C]}
@@ -400,7 +400,7 @@ Calculate the maximum of the values of attribute c in table se_lt_x
 
 Calculate the minimum of the values of attribute c in table se_lt_x
 
----+++ Aggregation requiring GROUP BY           
+---+++ Aggregation requiring GROUP BY
 ==
 {[],
  se_lt_z :: [g-G, sum(i)-I],
@@ -408,7 +408,7 @@ Calculate the minimum of the values of attribute c in table se_lt_x
 ==
 This will generate the GROUP BY SQL and sum se_lt_z.i for each value of se_lt_z.g
 
----+++ INNER JOIN with an aggregation sub-query where the sub-query is           
+---+++ INNER JOIN with an aggregation sub-query where the sub-query is
 constrained by a shared variable from the main query
 ==
 {[],
@@ -430,7 +430,7 @@ SELECT
   z4.i > (SELECT min(y11.f) FROM se_lt_y y11 WHERE z4.g=y11.d)
 ==
 
----+++ INNER JOIN in an aggregation sub-query           
+---+++ INNER JOIN in an aggregation sub-query
 ==
 {[],
  se_lt_y :: [d-D,f-F],
@@ -440,7 +440,7 @@ SELECT
          se_lt_z :: [h-J1, i-I])}
 ==
 
----+++ Negation           
+---+++ Negation
 ==
 {[],
  se_lt_x :: [a-A, b-B],
@@ -463,22 +463,22 @@ An exists restriction translates to a WHERE sub-query and is used to say that "e
 *Example*
 ==
 {[],
- se_lt_x :: [a-A, b-B],  
+ se_lt_x :: [a-A, b-B],
  exists se_lt_y :: [d-A]}
 ==
 
 compiles to:
 
 ==
-SELECT 
-  x.b, x.a 
-FROM 
+SELECT
+  x.b, x.a
+FROM
   se_lt_x x
-WHERE 
+WHERE
   EXISTS (SELECT * FROM se_lt_y WHERE x.a = y.d)
 ==
 
----+++ Left Outer Join           
+---+++ Left Outer Join
 ==
 se_lt_x :: [a-J1, b-B]
   *==
@@ -498,7 +498,7 @@ and
 {[], se_lt_x :: [a-Bar], Bar \== []}
 ==
 both do *exactly* the same thing - they will not restrict the query based on Bar. The second case seems to be logically consistent - all things are
-not in the empty list. 
+not in the empty list.
 
 ---+++ Compile time in-list constraint
 If your list is bound at compile-time, you can simply use it as the attribute value in CQL, for example:
@@ -536,7 +536,7 @@ is the exactly the same as
 {[], se_lt_x :: [b-B}
 ==
 
----+++ Disjunction resulting in OR in WHERE clause           
+---+++ Disjunction resulting in OR in WHERE clause
 ==
 {[],
  se_lt_x :: [a-A, b-B, c-C],
@@ -575,7 +575,7 @@ SELECT
   (se_lt_x x44 INNER JOIN se_lt_y y16 ON x44.a=y16.d AND y16.d=x44.a)
 ==
 
----+++ Disjunction resulting in different SELECT attributes           
+---+++ Disjunction resulting in different SELECT attributes
 (implemented as separate ODBC queries)
 ==
 {[],
@@ -595,7 +595,7 @@ and so the query is implemented as two separate ODBC queries
 The order_by specification is a list of "signed" variables.  The
 example above will order by se_lt_z.g descending
 
----+++ DISTINCT 
+---+++ DISTINCT
 
 Use the *|distinct/1|* keyword to specify which attributes you want to be distinct:
 ==
@@ -605,25 +605,25 @@ test_distinct :-
            se_lt_x :: [a-UserName,
                        c-Key],
            Key >= 7,
-           distinct([UserName])}, 
+           distinct([UserName])},
           L),
   length(L, N),
   format('~w solutions~n', [N]).
 
 CALL  : user:test_distinct/0
 26 solutions
-EXIT  : user:test_distinct/0 (0.098133s, 0.00cpu, 1,488 inferences) 
+EXIT  : user:test_distinct/0 (0.098133s, 0.00cpu, 1,488 inferences)
 ==
 
 
----+++ SELECT with NOT NULL restriction           
+---+++ SELECT with NOT NULL restriction
 ==
 {[],
  se_lt_z :: [i-I, j-J],
  J \== {null}}
 ==
 
----+++ First N           
+---+++ First N
 ==
 {[],
  N = 3,
@@ -634,7 +634,7 @@ EXIT  : user:test_distinct/0 (0.098133s, 0.00cpu, 1,488 inferences)
 This generates a TOP clause in SQL Server, and LIMIT clauses for PostgreSQL and SQLite
 
 
----+++ Self JOIN           
+---+++ Self JOIN
 ==
 {[],
  se_lt_z :: [h-H, i-I1]
@@ -671,7 +671,7 @@ SearchKey = '%ELSTON%',
 The query means "find a user where the UserName contains ELSTON OR the RealName contain ELSTON".  If !SearchKey is {null} then RealName=~ {null} will fail, which is correct.  If ignore_if_null was used, the test would _succeed_, which means the disjunction would always succeed i.e. the query would contain no restriction, which is clearly not the intended result.
 FIXME: Mike, what is this all about?
 
----+++ Three table JOIN           
+---+++ Three table JOIN
 ==
 {[],
  se_lt_x :: [a-A, c-C]
@@ -682,7 +682,7 @@ FIXME: Mike, what is this all about?
 ==
 The shared variable A joins se_lt_x and se_lt_y; the shared variable F joins se_lt_y and se_lt_z
 
----+++ Three table JOIN with NOLOCK locking hint           
+---+++ Three table JOIN with NOLOCK locking hint
 ==
 {[],
  se_lt_x :: [a-A, c-C]
@@ -693,7 +693,7 @@ The shared variable A joins se_lt_x and se_lt_y; the shared variable F joins se_
 ==
 The hash operator indicates the table that should be accessed WITH (NOLOCK)
 
----+++ SELECT with LIKE           
+---+++ SELECT with LIKE
 ==
 {[],
  se_lt_z :: [g-G, i-I],
@@ -721,8 +721,8 @@ You can pass the "N" is TOP N as a parameter (Subject to DBMS compatibility. Thi
 
 ==
 N = 3,
-findall(I,  
-        {[], 
+findall(I,
+        {[],
          se_lt_z :: [i-I], top(N), order_by([+I])},
         L)
 ==
@@ -731,11 +731,11 @@ findall(I,
 ---+++ compile_time_goal/1
 You can include compile_time_goal(Goal) in your CQL. If you specify a module, it will be used, otherwise the goal will be
 called in the current module. Note that the goal is executed in-order - if you want to use the bindings in your CQL, you
-must put the compile_time_goal before them. 
+must put the compile_time_goal before them.
 
 *|Example 1|*
 ==
-{[], 
+{[],
  se_lt_x :: [a-UserName,
              b-RealName,
              d-FavouriteColour],
@@ -749,7 +749,7 @@ must put the compile_time_goal before them.
 
 excellent_colours(['RED', 'BLUE']).
 
-{[], 
+{[],
  se_lt_x :: [a-UserName,
              b-RealName,
              d-FavouriteColour],
@@ -765,7 +765,7 @@ when specifying outer joins.
 
 *Example*
 ==
-{[], 
+{[],
  se_lt_x :: [a-UserNameA,
              b-RealName,
              d-FavouriteColour]
@@ -798,7 +798,7 @@ Expressions in WHERE restrictions are supported.
 
 *Example*
 ==
-{[], 
+{[],
  se_lt_n :: [i-I, j-J, k-K],
  J > 10 * (K / I) + 15},
 ==
@@ -806,9 +806,9 @@ Expressions in WHERE restrictions are supported.
 
 ---+++ Explicitly avoid the "No WHERE restriction" message
 
-To avoid accidentally deleting or updating all rows in a table CQL raises an exception if there is no WHERE restriction.  
+To avoid accidentally deleting or updating all rows in a table CQL raises an exception if there is no WHERE restriction.
 
-Sometimes however you really do need to delete or update all rows in a table. 
+Sometimes however you really do need to delete or update all rows in a table.
 
 To support this requirement in a disciplined way (and to avoid the creation of "dummy" WHERE restrictions) the keyword *absence_of_where_restriction_is_deliberate* has been added.
 
@@ -826,8 +826,8 @@ To support this requirement in a disciplined way (and to avoid the creation of "
 HAVING restrictions can be specified.  For example:
 
 ==
-{[], 
- se_lt_z :: [sum(i)-I, 
+{[],
+ se_lt_z :: [sum(i)-I,
              g-G],
  group_by([G]),
  having(I > 30)}
@@ -846,33 +846,33 @@ INSERT and UPDATE values can be formatted in-line at runtime.  For example:
 
 ==
 Suffix = 'NOGG',
-cql_transaction(Schema, UserId, 
-                {[], 
+cql_transaction(Schema, UserId,
+                {[],
                 insert(se_lt_x, [a-'A', b-'B', c-100, d-format('EGG_~w', [Suffix])])}),
 ==
 
-will insert 'EGG_NOGG' into attribute 'd'. 
- 
+will insert 'EGG_NOGG' into attribute 'd'.
+
 ---+++ Negations in WHERE Clauses
 
 You can specify negations in CQL WHERE clauses e.g.
 
 ==
-{[], 
- se_lt_z :: [g-G, h-H, i-I], 
+{[],
+ se_lt_z :: [g-G, h-H, i-I],
  \+((G == 'A1', H == 'B1' ; G == 'D1', H == 'B3'))},
 ==
 
 Note that, just like in Prolog, \+ is a unary operator hence the "double" brackets in the example above.
 
----+++ Predicate-generated Attribute Values  
+---+++ Predicate-generated Attribute Values
 It is possible to generate *|compile time|* attribute values by specifying a _predicate_ which is executed when the CQL statement is compiled.
- 
+
 The predicate must return the value you want as its last argument.  You specify the predicate where you would normally put the attribute value.  The predicate is specified _with its output argument missing_.
 
 *Example* - Using domain allowed values in a query.
 
-In the following CQL statement the predicate domain_allowed_value/3 is called within findall/3 *|at compile time|* to generate a list of domain values that restrict favourite_colour to be 'ORANGE' or 'PINK' or 'BLUE', or 'GREEN'. 
+In the following CQL statement the predicate domain_allowed_value/3 is called within findall/3 *|at compile time|* to generate a list of domain values that restrict favourite_colour to be 'ORANGE' or 'PINK' or 'BLUE', or 'GREEN'.
 ==
 colour('ORANGE').
 colour('PINK').
@@ -880,7 +880,7 @@ colour('BLUE').
 colour('GREEN').
 
 {[],
- se_lt_x :: [d-findall(Value, 
+ se_lt_x :: [d-findall(Value,
                        permissible_colour(Value)),
              a-UserName]}
 ==
@@ -889,7 +889,7 @@ Note how findall/3 is actually called by specifying findall/2.
 
 There is not much point using predicate-generated attribute values in compile-at-runtime CQL as you can always call the predicate to generate the required values _outside_ the CQL statement.
 
----+++ INSERT from SELECT           
+---+++ INSERT from SELECT
 INSERT from SELECT is supported:
 ==
 Constant = 'MIKE',
@@ -909,11 +909,11 @@ Note the use of the _as(d)_ construct in the SELECT part of the CQL to make
 the constant *|'MIKE'|* appear to come from the SELECT thus setting lt_x1.d
 to *|'MIKE'|* in every row inserted.
 
----++ Hooks (Event Processing and History)           
+---++ Hooks (Event Processing and History)
 CQL provides hooks for maintaining detailed history of data in the database.
 
 The hook predicates are: event_notification_table/2, cql_history_attribute/3, cql_update_history_hook/16
-   
+
 Event Processing and History recording can be suppressed for a particular
 update/insert/delete statement by including the _no_state_change_actions_9
 directive.
@@ -945,24 +945,24 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 
 
 */
- 
+
 :-chr_option(line_numbers, on).
 :-chr_option(check_guard_bindings, error).
 :-chr_option(debug, off).
 :-chr_option(optimize, full).
 :-chr_option(guard_simplification, off). % Added to stop trail overflowing
- 
+
 :-chr_type list(T) ---> [] ; [T|list(T)].
- 
+
 :-chr_type 'AggregationOperator' ---> count ; max ; min ; avg ; sum.
 :-chr_type 'AggregationVariable' == any.
 :-chr_type 'ApplicationValue' == any.
 :-chr_type 'DebugMode' ---> explicit.
 :-chr_type 'DictinctionType' ---> no_distinction ; distinct_on_specified_attributes ; distinct_on_all_select_attributes.
-:-chr_type 'Dsn' == any.                                                                  
+:-chr_type 'Dsn' == any.
 :-chr_type 'Attribute' ---> attribute('Schema', 'TableAlias', 'AttributeName').
 :-chr_type 'AttributeName' == any.
-:-chr_type 'AttributeNameValuePair' ---> 'AttributeName'-'ApplicationValue'. 
+:-chr_type 'AttributeNameValuePair' ---> 'AttributeName'-'ApplicationValue'.
 :-chr_type 'BooleanOperator' ---> and ; or.
 :-chr_type 'ComparisonOperator' ---> < ; =< ; == ; \== ; >= ; > ; (=~) ; (=\=) ; (=:=).
 :-chr_type 'CompilationInstruction' ---> if_var('Variable') ; if_not_var('Variable') ; if_null('Variable') ; if_not_null('Variable') ; list('Variable') ; empty('Variable') ; not_empty('Variable') ; compile ; and('CompilationInstruction', 'CompilationInstruction').
@@ -1124,7 +1124,7 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 :-chr_constraint in_line_format(-'QueryId', +'Format', ?list('FormatArg'), ?'ApplicationValue').
 :-chr_constraint include_select_attribute(-'QueryId', ?'CompilationInstruction', +'Size', +list('SqlToken'), ?'Tail', ?'Output').
 :-chr_constraint insert(-'QueryId', +'Schema', +'TableName', +list('AttributeNameValuePair')).
-:-chr_constraint instantiate_table_aliases. 
+:-chr_constraint instantiate_table_aliases.
 :-chr_constraint join(-'QueryId', -'Join', -'Join', +'JoinType', -'Join').
 :-chr_constraint join_alias(-'Join', +'Side', ?'TableAlias').
 :-chr_constraint join_leaf(-'Join', ?'TableAlias').
@@ -1222,10 +1222,10 @@ In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where 
 :-chr_constraint write_insert_attribute_names(-'QueryId', +list('AttributeNameValuePair')).
 :-chr_constraint write_insert_value(-'QueryId', +'Schema', +'TableName', +'AttributeName', ?'ApplicationValue').
 :-chr_constraint write_insert_values(-'QueryId', +'Schema', +'TableName', ?list('AttributeNameValuePair')).
-:-chr_constraint write_join(-'QueryId', -'Join'). 
+:-chr_constraint write_join(-'QueryId', -'Join').
 :-chr_constraint write_join_ons(-'QueryId', ?'On').
-:-chr_constraint write_limit. 
-:-chr_constraint write_lock_hint(-'QueryId', +'Schema', ?'TableAlias'). 
+:-chr_constraint write_limit.
+:-chr_constraint write_lock_hint(-'QueryId', +'Schema', ?'TableAlias').
 :-chr_constraint write_order_by(-'QueryId', ?'OrderBy').
 :-chr_constraint write_order_by_attribute(-'QueryId', ?list('SqlToken'), ?'Tail').
 :-chr_constraint write_order_bys(-'QueryId', ?list('OrderBy')).
@@ -1280,10 +1280,10 @@ set_module_default_schema(Module,      % +
 
 cql_get_module_default_schema(Module,                          % +
                               ModuleDefaultSchema) :-          % ?
-      
+
         ( module_default_schema(Module, Schema) ->
             ModuleDefaultSchema = Schema
-        ; 
+        ;
             default_schema(ModuleDefaultSchema)
         ).
 
@@ -1308,7 +1308,7 @@ check_decompilation(Schema, HalfCompiledSql, HalfCompiledOdbcParameters):-
         dbms(Schema, DBMS),
         ( fully_compile_sql(HalfCompiledSql, HalfCompiledOdbcParameters, [], Sql, OdbcParameters, _),
           atom_codes(Sql, SqlCodes),
-          sql_tokens(Tokens, SqlCodes, []),          
+          sql_tokens(Tokens, SqlCodes, []),
           findall(test,
                     ( member(odbc_parameter(_, _, _, _, _, _), OdbcParameters)
                     ; member(odbc_explicit_type_parameter(_, _, _), OdbcParameters)
@@ -1320,12 +1320,12 @@ check_decompilation(Schema, HalfCompiledSql, HalfCompiledOdbcParameters):-
             \+sub_atom(Atom, _, _, _, 'COLLATE')
         ; otherwise->
             prolog_load_context(source, FileName),
-            prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)),            
+            prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)),
             format(user_error, 'Could not decompile generated CQL: ~w~n~q~n', [FileName:LineNumber, HalfCompiledSql])
         ).
 
 
-        
+
 
 
 %%      cql_goal_expansion(?Schema,
@@ -1344,12 +1344,12 @@ cql_goal_expansion(Schema, Cql, GoalExpansion) :-
         ; nonvar(Arg),
           Arg = compile_at_runtime(_)
         ),
-        
-        \+current_prolog_flag(xref, true), % Prevent expansion when used by pldoc to prevent spurious CQL compile errors 
-        atom(Schema),  
+
+        \+current_prolog_flag(xref, true), % Prevent expansion when used by pldoc to prevent spurious CQL compile errors
+        atom(Schema),
         ( cql_goal_expansion_1(Schema, Cql, GoalExpansion_) ->
             GoalExpansion = GoalExpansion_
-        ; 
+        ;
             throw(format('Cannot expand CQL: Schema = ~w, Cql=(~w)', [Schema, Cql]))
         ),
         ( do_cql_compiletime_checks ->
@@ -1381,7 +1381,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
             FileName = '<Dynamically created CQL - no source file>',
             LineNumber = 0
         ),
-        
+
         ( is_list(CompilationDirective),
           EqualityRestrictionVariables = CompilationDirective,
           forall(member(EqualityRestrictionVariable, EqualityRestrictionVariables), var(EqualityRestrictionVariable)) ->
@@ -1391,7 +1391,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
                     CqlA),
             translate_to_constraints(Schema, CqlB, InitialConstraints),
             call(InitialConstraints),
-            compile_mode(compiletime),                    
+            compile_mode(compiletime),
             fully_compile,
             runtime_constraints(cql_execute(cache_odbc_statement)),
             collect_runtime_constraints(GoalExpansion),
@@ -1402,7 +1402,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
                 file_base_name(FileName, FileBaseName),
                 file_name_extension(Module, _, FileBaseName),
                 ignore(cql_dependency_hook(ReferencedTableSet, Module))
-            
+
             ; otherwise ->
                 true
             )
@@ -1411,7 +1411,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
             % Should this be a compile warning? runtime-compilation should now be officially deprecated
             ( nonvar(IgnoreIfNullVariables) ->
                 variable_map(IgnoreIfNullVariables, CqlA, CqlB, VariableMap)
-            
+
             ; otherwise ->
                 true
             ),
@@ -1434,7 +1434,7 @@ cql_runtime_1(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, 
         ( var(VariableMap) ->
             % Handle the case where IgnoreIfNullVariables is dynamically generated
             variable_map(IgnoreIfNullVariables, CqlA, CqlB, VariableMap)
-        
+
         ; otherwise ->
             true
         ),
@@ -1463,7 +1463,7 @@ variable_map_1([A|As], [B|Bs], IgnoreIfNullVariables, [A-B|VariableMap]) :-
         select(I, IgnoreIfNullVariables, Rest),
         I == A, !,
         variable_map_1(As, Bs, Rest, VariableMap).
-              
+
 variable_map_1([V|As], [V|Bs], IgnoreIfNullVariables, VariableMap) :-
         variable_map_1(As, Bs, IgnoreIfNullVariables, VariableMap).
 
@@ -1495,7 +1495,7 @@ store_conjunction([], _, _).
 store_conjunction([Goal|Goals], QueryId, Dictionary) :-
         create_conjunction_variables(Goal, QueryId, Dictionary, ConjunctionGoal),
         conjunction_goal(ConjunctionGoal),
-        store_conjunction(Goals, QueryId, Dictionary).  
+        store_conjunction(Goals, QueryId, Dictionary).
 
 
 collect_conjunction_variables @
@@ -1527,7 +1527,7 @@ create_variable_dictionary(Term,                     % +
         ( ground(Term) ->
             GroundTerm = Term,
             NewDictionary = Dictionary
-      
+
         ; var(Term) ->
             ( member(Variable-GroundTerm, Dictionary),
               Variable == Term ->
@@ -1536,12 +1536,12 @@ create_variable_dictionary(Term,                     % +
                 gensym(cql_stale_var_, UniqueAtom),
                 GroundTerm = '$VAR'(UniqueAtom),
                 NewDictionary = [Term-GroundTerm|Dictionary]
-            ; otherwise->             
+            ; otherwise->
                 gensym(cql_var_, UniqueAtom),
                 GroundTerm = '$VAR'(UniqueAtom),
                 NewDictionary = [Term-GroundTerm|Dictionary]
             )
-      
+
         ; otherwise ->
             functor(Term, Name, Arity),
             functor(GroundTerm, Name, Arity),
@@ -1553,7 +1553,7 @@ create_variable_dictionary(Term,                     % +
 add_args_to_dictionary(Term, Dictionary, N, Arity, GroundTerm, NewDictionary) :-
         ( N > Arity ->
             NewDictionary = Dictionary
-        ; 
+        ;
             arg(N, Term, Arg),
             create_variable_dictionary(Arg, Dictionary, GroundArg, DictionaryA),
             arg(N, GroundTerm, GroundArg),
@@ -1579,11 +1579,11 @@ cql_stale:attr_unify_hook(_,_).
 create_conjunction_variables(Term, QueryId, Dictionary, TermWithVariables) :-
         ( var(Term) ->
             TermWithVariables = Term
-        ; memberchk(ExternalVariable-Term, Dictionary) ->                
+        ; memberchk(ExternalVariable-Term, Dictionary) ->
             conjunction_variable(QueryId, ExternalVariable, ConjunctionVariable),
             ( Term = '$VAR'(Key),
               atom_prefix(Key, cql_stale_var_)->
-                put_attr(ConjunctionVariable, cql_stale, 1) 
+                put_attr(ConjunctionVariable, cql_stale, 1)
             ; otherwise->
                 true
             ),
@@ -1592,7 +1592,7 @@ create_conjunction_variables(Term, QueryId, Dictionary, TermWithVariables) :-
             TermWithVariables = Var
         ; atomic(Term) ->
            TermWithVariables = Term
-      
+
         ; otherwise ->
            functor(Term, Name, Arity),
            functor(TermWithVariables, Name, Arity),
@@ -1604,7 +1604,7 @@ create_conjunction_variables(Term, QueryId, Dictionary, TermWithVariables) :-
 add_arg_variables(Term, QueryId, Dictionary, N, Arity, TermWithVariables) :-
         ( N > Arity ->
             true
-        ; 
+        ;
             arg(N, Term, Arg),
             create_conjunction_variables(Arg, QueryId, Dictionary, NewArg),
             arg(N, TermWithVariables, NewArg),
@@ -1641,14 +1641,14 @@ bind_external_variables_once_fully_compiled @
 
 translate_to_constraints_1(Schema, QueryLevel, Cql, QueryId, CqlConstraints) :-
         ( translate_to_constraints_2(Schema, QueryLevel, Cql, QueryId, CqlConstraints, []) *->
-      
+
             ( msort(CqlConstraints, SortedCqlConstraints),
               nextto(state_change_query(_, _, _, _), state_change_query(_, _, _, _), SortedCqlConstraints) ->
                 throw(format('Cannot mix state change queries in a single CQL statement', []))
-            ; 
+            ;
                 true
             )
-        ; 
+        ;
            throw(format('Cannot translate CQL: ~w~n', [Cql]))
         ).
 
@@ -1678,7 +1678,7 @@ translate(_, _, _, compile_time_goal(Goal)) --> !,
 
 translate(_, _, _, original_cql(Cql)) --> !,
         [original_cql(Cql)].
-  
+
 translate(_, _, _, cql_statement_location(FileName, LineNumber)) --> !,
         [cql_statement_location(FileName, LineNumber)].
 
@@ -1751,7 +1751,7 @@ translate(Schema, QueryId, ParentJoin, JoinTerm) -->
         %    (@ :: [a-A, ..., pk-Pk] =*= @@ :: [pk-Pk]) ==* z :: [z-A, ...]
         % Where @@ is a symbol to mean 'the same table as the target but a different alias'
         % The first part of this is dropped as an implicit join
-      
+
         % First off, we need to save space for the key. If we don't add this cql_var_X to the
         % dictionary somehow, it will be translated as if cql_var_X were a literal for the WHERE clause
          {gensym(cql_var_, KeyInfo),
@@ -1767,7 +1767,7 @@ translate(Schema, QueryId, ParentJoin, JoinTerm) -->
         }, !,
         translate(Schema, QueryId, LhsJoin, Lhs),
         translate(Schema, QueryId, RhsJoin, Rhs),
-      
+
         [on(ParentJoin, _, On),
          join(QueryId, ParentJoin, LhsJoin, JoinType, RhsJoin)].
 
@@ -1778,11 +1778,11 @@ translate(Schema, QueryId, ParentJoin, JoinTerm) -->
         !,
         translate(Schema, QueryId, LhsJoin, Lhs),
         translate(Schema, QueryId, RhsJoin, Rhs),
-        
+
         [join(QueryId, ParentJoin, LhsJoin, JoinType, RhsJoin)].
 
-  
-  
+
+
 translate(Schema,
           QueryId,
           ParentJoin,
@@ -1835,7 +1835,7 @@ translate(Schema, QueryId, _, update(TableName, UpdateAttributeNameValuePairs)) 
          query_type(QueryId, update),
          attributes_to_check(QueryId, Schema, TableName, UpdateAttributeNameValuePairs),
          state_change_query(QueryId, update, Schema, TableName)].
-  
+
 translate(Schema, QueryId, ParentJoin, delete(TableName, AttributeNameValuePairs)) --> !,
         {\+ duplicate_attributes(delete, Schema, TableName, AttributeNameValuePairs)},
         [delete_row(QueryId, TableName, TableAlias),
@@ -1852,10 +1852,10 @@ translate(Schema, QueryId, ParentJoin, \+((Lhs, Rhs))) --> !,     % De Morgan
 translate(Schema, QueryId, ParentJoin, \+((Lhs ; Rhs))) --> !,    % De Morgan
         translate(Schema, QueryId, ParentJoin, (\+Lhs, \+Rhs)).
 
-translate(Schema, QueryId, _, \+Comparison) --> 
+translate(Schema, QueryId, _, \+Comparison) -->
         {simple_comparison(Schema, Comparison, _, InverseOperator, Lhs, Rhs)}, !,
         translate_comparison(QueryId, Schema, Lhs, InverseOperator, Rhs).
-  
+
 translate(Schema, QueryId, _, Comparison) -->
         {simple_comparison(Schema, Comparison, Operator, _, Lhs, Rhs)}, !,
         translate_comparison(QueryId, Schema, Lhs, Operator, Rhs).
@@ -1878,10 +1878,10 @@ translate(Schema, QueryId, _, having(Having)) --> !,
 
 translate(_, QueryId, _, distinct) --> !,
         [select_distinction(QueryId, distinct_on_all_select_attributes)].
-  
+
 translate(_, QueryId, _, distinct(Distincts)) --> !,
         [distincts(QueryId, Distincts)].
-  
+
 translate(Schema, QueryId, _, top(N)) --> !,
         [top(QueryId, Schema, N)].
 
@@ -1955,7 +1955,7 @@ simple_comparison(Schema,                    % +
 translate_comparison(QueryId, Schema, Lhs, Operator, Rhs) -->
         translate_expression(Schema, Lhs, LhsResult),
         translate_expression(Schema, Rhs, RhsResult),
-        
+
         [comparison(QueryId, LhsResult, Operator, RhsResult)].
 
 
@@ -1966,9 +1966,9 @@ translate_expression(Schema,
          aggregation_operator(AggregationOperator), !,
          arg(1, Goal, AggregationVariable),
          arg(2, Goal, Goals)},
-        
+
         translate_to_constraints_2(Schema, sub_query, Goals, SubQueryId),
-      
+
         [aggregation_variable(SubQueryId,
                               AggregationOperator,
                               AggregationVariable),
@@ -1988,10 +1988,10 @@ aggregation_operator(sum).
 
 prolog_term_to_restriction_tree(Schema, \+(Lhs, Rhs), RestrictionTree) :- !,
         prolog_term_to_restriction_tree(Schema, (\+Lhs ; \+Rhs), RestrictionTree).
-  
+
 prolog_term_to_restriction_tree(Schema, \+(Lhs ; Rhs), RestrictionTree) :- !,
         prolog_term_to_restriction_tree(Schema, (\+Lhs, \+Rhs), RestrictionTree).
-  
+
 prolog_term_to_restriction_tree(Schema, (Lhs, Rhs), and(RestrictionLhs, RestrictionRhs)) :- !,
         prolog_term_to_restriction_tree(Schema, Lhs, RestrictionLhs),
         prolog_term_to_restriction_tree(Schema, Rhs, RestrictionRhs).
@@ -2002,11 +2002,11 @@ prolog_term_to_restriction_tree(Schema, (Lhs ; Rhs), or(RestrictionLhs, Restrict
 
 prolog_term_to_restriction_tree(Schema, \+Comparison, comparison(RestrictionLhs, InverseOperator, RestrictionRhs)) :- !,
         simple_comparison(Schema, Comparison, _, InverseOperator, RestrictionLhs, RestrictionRhs).
-  
+
 prolog_term_to_restriction_tree(Schema, Comparison, comparison(Lhs, Operator, Rhs)) :-
         ( simple_comparison(Schema, Comparison, Operator, _, Lhs, Rhs) ->
             true
-        ; 
+        ;
             throw(format('Cannot translate restriction term: ~w', [Comparison]))
         ).
 
@@ -2059,23 +2059,23 @@ store_attribute_bindings_1(Schema, QueryId, TableAlias, [AttributeNameValuePair|
         % For INSERT from SELECTs
         ( AttributeNameValuePair = as(AttributeName)-ApplicationValue ->
             attribute_binding(QueryId, attribute(Schema, TableAlias, AttributeName), selection_constant(ApplicationValue))
-      
+
         % Normal Name-Value specification
         ; AttributeNameValuePair = AttributeName-ApplicationValue,
           atomic_application_value(ApplicationValue) ->
             attribute_binding(QueryId, attribute(Schema, TableAlias, AttributeName), ApplicationValue)
-      
+
         % ignore_if_null
         ; AttributeNameValuePair = (AttributeName-ignore_if_null(ApplicationValue)),
           var(ApplicationValue)->
             attribute_binding(QueryId, attribute(Schema, TableAlias, AttributeName), AttributeValue),
             comparison(QueryId, AttributeValue, ==, ignore_if_null(ApplicationValue))
-      
+
         % runtime list
         ; AttributeNameValuePair = (AttributeName-list(ApplicationValue))->
             attribute_binding(QueryId, attribute(Schema, TableAlias, AttributeName), AttributeValue),
             comparison(QueryId, AttributeValue, ==, list(ApplicationValue))
-           
+
         % Compile-time attribute value
         ; AttributeNameValuePair = (AttributeName-CompileTimeGoal),
           callable(CompileTimeGoal),
@@ -2084,7 +2084,7 @@ store_attribute_bindings_1(Schema, QueryId, TableAlias, [AttributeNameValuePair|
           current_predicate(PredicateName/Arity),
           call(CompileTimeGoal, ApplicationValue) ->
             attribute_binding(QueryId, attribute(Schema, TableAlias, AttributeName), ApplicationValue)
-        ),   
+        ),
         store_attribute_bindings_1(Schema, QueryId, TableAlias, AttributeNameValuePairs).
 
 
@@ -2101,7 +2101,7 @@ atomic_application_value(ApplicationValue) :-  % +
         ; ApplicationValue == {transaction_id}
         ),
         !.
-  
+
 
 ensure_binding_is_on_the_external_variable_so_that_ignore_if_null_works_properly_1 @
         ignore_if_null(ExternalVariable, InternalVariable)
@@ -2132,20 +2132,20 @@ remove_comparison_involving_ignored_variable @
         <=>
         ( ExternalVariable == {null},
           InternalVariable == Lhs
-        
+
         ; ExternalVariable == {null},
           InternalVariable == Rhs
-        
+
         ; InternalVariable == Lhs,
           Rhs == {null}
-        
+
         ; InternalVariable == Rhs,
           Lhs == {null}
         )
         |
         true.
 
-            
+
 fully_compile @
         fully_compile
         <=>
@@ -2180,7 +2180,7 @@ fully_compile @
         prepare_odbc_statements,
         cleanup_compile,
         cql_fully_compiled.
-                
+
 
 
 unify_ignore_if_null_variables @
@@ -2307,7 +2307,7 @@ determine_select_distinctions @
         ==>
         determine_select_distinction(QueryId).
 
-  
+
 select_distinction_exists @
         select_distinction(QueryId, _)
         \
@@ -2353,7 +2353,7 @@ select_binding_aggregation @
         |
         select_binding(QueryId, aggregation(AggregationOperator), attribute(Schema, TableAlias, AttributeName), Variable).
 
-           
+
 sub_select_binding_aggregation @
         aggregation_variable(_, AggregationOperator, AggregationVariable),
         select_binding(QueryId, plain, Attribute, Variable)
@@ -2535,7 +2535,7 @@ bad_order_by_specification @
         ( \+ is_list(OrderBys)
         ; is_list(OrderBys),
           member(OrderBy, OrderBys),
-          nonvar(OrderBy),    
+          nonvar(OrderBy),
           OrderBy \= +(_),
           OrderBy \= -(_)
         )
@@ -2583,7 +2583,7 @@ check_for_top_without_order_by @
         top(_, _, _), check_for_top_without_order_by, original_cql(Cql) <=> throw(format('top without order_by in CQL: ~w', [Cql])).
         check_for_top_without_order_by <=> true.
 
-        
+
 join_tree_nodes @
         simplify,
         query(Join, _, top_level_query)       % Only bother doing join_tree for top_level_queries
@@ -2610,7 +2610,7 @@ every_join_below_an_outer_side_join_is_an_outer_side_join @
         join(_, ParentJoin, LhsJoin, _, RhsJoin)
         ==>
         outer_side_join(LhsJoin),
-        outer_side_join(RhsJoin).  
+        outer_side_join(RhsJoin).
 
 
 walk_join_tree_branch @
@@ -2650,7 +2650,7 @@ accumulate_join_tree_nodes @
         join_tree_node(QueryId, _, JoinTreeNode)
         <=>
         join_tree_nodes(QueryId, [JoinTreeNode|JoinTreeNodes]).
-  
+
 
 amalgamate_restrictions_if_join_tree_is_the_same @
         select_attributes_for_disjunction_comparison(QueryIdA, SelectAttributesA),
@@ -2674,7 +2674,7 @@ unify_table_aliases([]).
 unify_table_aliases([TableAliasA=TableAliasB|Unifiers]) :-
         TableAliasA = TableAliasB,
         unify_table_aliases(Unifiers).
-        
+
 
 solve_sub_query @
         generate_sub_query_sql,
@@ -2705,7 +2705,7 @@ add_sub_query_join_where @
         attribute_binding(SubQueryId, attribute(_, SubQueryTableAlias, SubQueryAttributeName), Variable)
         \
         % No longer a SELECT binding in the sub-query; its now part of the sub query WHERE
-        select_binding(SubQueryId, _, _, Variable)  
+        select_binding(SubQueryId, _, _, Variable)
         <=>
         sub_query_join_variable(Variable),
         restriction_leaf(SubQueryId,
@@ -2729,7 +2729,7 @@ restriction_from_comparison_of_top_level_query_attribute_to_sub_query_attribute 
         ( Lhs == V1,
           Rhs == V2 ->
             Comparison = comparison(Attribute_1, Operator, Attribute_2)
-        
+
         ; Lhs == V2,
           Rhs == V1 ->
             Comparison = comparison(Attribute_2, Operator, Attribute_1)
@@ -2825,14 +2825,14 @@ cqlv2_1_except_when_restriction_already_exists_2 @
         <=>
         true.
 
-cqlv2_1_except_when_restriction_already_exists_3 @ 
+cqlv2_1_except_when_restriction_already_exists_3 @
         sub_query_join_variable(Variable)
         \
         cql2_variable(_, Variable, _)
         <=>
         true.
 
-cqlv2_1_except_when_restriction_already_exists_4 @ 
+cqlv2_1_except_when_restriction_already_exists_4 @
         expression_where_restriction_variable(Variable)
         \
         cql2_variable(_, Variable, _)
@@ -2854,7 +2854,7 @@ cqlv2_1_except_comparisons @
         query_type(QueryId, Type),
         comparison(QueryId, Lhs, _Operator, Rhs)
         \
-        cql2_variable(QueryId, Variable, _) 
+        cql2_variable(QueryId, Variable, _)
         <=>
         % If you write something like
         % foo(X):- {[], some_table :: [column-X], X == 'VALUE'}
@@ -2884,7 +2884,7 @@ cqlv2_variable_is_ok @
         where_restriction_variable(Variable),
         restriction_leaf(QueryId, where, Comparison).
 
-                
+
 
 
 
@@ -2912,7 +2912,7 @@ ignore_comparison_to_empty_list @
         true.
 
 
-top_level_restriction_cannot_refer_to_a_sub_query_attribute @ 
+top_level_restriction_cannot_refer_to_a_sub_query_attribute @
         query(TopLevelQueryId, _, top_level_query),
         query(SubQueryId, _, sub_query),
         attribute_binding(SubQueryId, attribute(Schema, TableAlias, AttributeName), _)
@@ -2925,7 +2925,7 @@ top_level_restriction_cannot_refer_to_a_sub_query_attribute @
         |
         throw(format('Top level restriction cannot refer to a sub-query attribute : ~w', [AttributeName])).
 
-        
+
 simplify_or_restriction @
         % Trivial "or" conditions can arise out from the simplification of disjunctions
         restriction_tree(QueryId, RestrictionType, or(Lhs, Rhs))
@@ -2942,7 +2942,7 @@ simplify_and_restriction @
         <=>
         ( Lhs == true ->
             RestrictionTree = Rhs
-            
+
         ; Rhs == true ->
             RestrictionTree = Lhs
         )
@@ -2982,7 +2982,7 @@ insert_updated_ @
         \+ memberchk(updated_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [updated_-{timestamp}|AttributeNameValuePairs]).
-  
+
 
 insert_updated_by_ @
         insert(QueryId, Schema, TableName, AttributeNameValuePairs)
@@ -2991,7 +2991,7 @@ insert_updated_by_ @
         \+ memberchk(updated_by_-_, AttributeNameValuePairs)
         |
         insert(QueryId, Schema, TableName, [updated_by_-{user_id}|AttributeNameValuePairs]).
-  
+
 
 update_updated_ @
         update(QueryId, Schema, TableName, TableAlias, AttributeNameValuePairs)
@@ -3077,7 +3077,7 @@ write_insert @
         <=>
         ( AttributeNameValuePairs == []->
             write_sql(QueryId, compile, top, ['INSERT INTO ', table_name(TableName), ' DEFAULT VALUES'|T1], T1, [], [])
-        ; 
+        ;
             write_sql(QueryId, compile, top, ['INSERT INTO ', table_name(TableName), ' ('|T2], T2, [], []),
             write_insert_attribute_names(QueryId, AttributeNameValuePairs),
             write_sql(QueryId, compile, top, [') VALUES ('|T3], T3, [], []),
@@ -3087,7 +3087,7 @@ write_insert @
                 write_sql(QueryId, compile, top, [') RETURNING ', PrimaryKey|T4], T4, [], [])
             ; otherwise->
                 write_sql(QueryId, compile, top, [')'|T4], T4, [], [])
-            )      
+            )
         ).
 
 
@@ -3145,7 +3145,7 @@ write_update @
         <=>
         ( dbms(Schema, 'Microsoft SQL Server') ->
             write_sql(QueryId, compile, top, ['UPDATE ', TableAlias, ' SET '|T], T, [], [])
-            
+
         ; dbms(Schema, 'PostgreSQL') ->
             write_sql(QueryId, compile, top, ['UPDATE ', TableName, ' ', TableAlias, ' SET '|T], T, [], [])
         ; dbms(Schema, 'SQLite') ->
@@ -3240,7 +3240,7 @@ write_update_attribute_copy_postgres @
         SelectVariable == UpdateVariable
         |
         SelectAttributeVariableUsed = select_attribute_variable_used,
-      
+
         ( TargetAlias == TableAlias ->
             write_sql(QueryId,
                       compile,
@@ -3257,7 +3257,7 @@ write_update_attribute_copy_postgres @
                       T,
                       [],
                       [])
-      
+
         ).
 
 
@@ -3385,7 +3385,7 @@ write_evaluated_update_attribute_sqlite @
         write_update_attribute(QueryId, TableAlias, AttributeName, Expression)
         <=>
         dbms(Schema, 'SQLite')
-        |        
+        |
         % SQLite does not support the above method. Instead of Expression, we must actually put the entire FROM/WHERE clause here in a subquery like
         % attribute_name(AttributeName) = SELECT(Expression FROM .......)
         write_sql(QueryId,
@@ -3406,7 +3406,7 @@ write_evaluated_update_attribute_sqlite @
                     []),
         find_copy_of_from(QueryId, X, Tail, Parameters).
 
-        
+
 write_evaluated_update_binary_expression @
         write_expression(QueryId, Schema, TableName, AttributeName, TableAlias, Expression)
         <=>
@@ -3421,12 +3421,12 @@ write_evaluated_update_binary_expression @
             write_sql(QueryId, compile, top, ['(1.0*'|T1], T1, [], [])
         ; otherwise->
             write_sql(QueryId, compile, top, ['('|T1], T1, [], [])
-        ),           
+        ),
         write_expression(QueryId, Schema, TableName, AttributeName, TableAlias, Lhs),
         write_sql(QueryId, compile, top, [' ', Operator, ' '|T2], T2, [], []),
         write_expression(QueryId, Schema, TableName, AttributeName, TableAlias, Rhs),
         ( dbms(Schema, 'SQLite') ->
-            % SQLite defaults to integer arithmetic. 
+            % SQLite defaults to integer arithmetic.
             write_sql(QueryId, compile, top, ['*1.0)'|T3], T3, [], [])
         ; otherwise->
             write_sql(QueryId, compile, top, [')'|T3], T3, [], [])
@@ -3446,8 +3446,8 @@ write_evaluated_update_expression_constant @
         integer(Constant)
         |
         atom_number(ConstantAtom, Constant),
-        write_sql(QueryId, compile, top, [ConstantAtom|T], T, [], []).  
-  
+        write_sql(QueryId, compile, top, [ConstantAtom|T], T, [], []).
+
 write_evaluated_update_expression_parameter @
         write_expression(QueryId, Schema, TableName, AttributeName, _, Variable)
         <=>
@@ -3461,7 +3461,7 @@ write_evaluated_update_expression_parameter @
                   [odbc_parameter(Schema, TableName, AttributeName, Variable, evaluated_update_parameter, _)],
                   []).
 
-  
+
 write_evaluated_update_table_expression_attribute @
         write_expression(QueryId, _, _, _, TableAlias, AttributeName)
         <=>
@@ -3516,7 +3516,7 @@ no_distinct @
 should_not_be_any_distinct_constraints_left_over @
         check_for_orphan_distincts,
         distinct(_, Distinct),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Unused DISTINCT ~w in CQL: ~w', [Distinct, Cql])).
 
@@ -3525,7 +3525,7 @@ select_variable_is_used_if_its_a_where_variable @
         where_restriction_variable(Variable)
         ==>
         SelectAttributeVariableUsed = select_attribute_variable_used.
-  
+
 select_variable_is_used_if_its_a_join_variable @
         select_attribute(_, _, 1, SelectAttributeVariableUsed, Variable),
         join_variable(Variable)
@@ -3543,7 +3543,7 @@ check_for_orphan_select_variables_in_updates @
         check_for_orphan_select_variables_in_updates,
         query_type(QueryId, update),
         select_attribute(QueryId, _, 1, SelectAttributeVariableUsed, Variable),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         var(SelectAttributeVariableUsed)
         |
@@ -3554,7 +3554,7 @@ original_cql_uniqueness @
         \
         original_cql(Cql)
         <=>
-        true. 
+        true.
 
 
 statement_location_uniqueness @
@@ -3567,7 +3567,7 @@ statement_location_uniqueness @
 
 top_n_error @
         top(_, _, N),
-        original_cql(Cql)  
+        original_cql(Cql)
         ==>
         \+ var(N),
         \+ (integer(N), N >= 0)
@@ -3653,7 +3653,7 @@ write_select_for_insert_attributes_complete @
         select_for_insert_variables([], _)
         <=>
         phase(QueryId, from).
-  
+
 
 write_select_for_insert_count @
         select_for_insert_variable(QueryId, Variable, _),
@@ -3671,7 +3671,7 @@ write_select_for_insert_aggregation @
         select_attribute(QueryId, select_attribute(aggregation(AggregationOperator), _, _, TableAlias, AttributeName), 1, _, Variable)
         <=>
         % Why did someone try and do this?!
-        %map_database_atom(AggregationOperator, AggregationOperatorUc),        
+        %map_database_atom(AggregationOperator, AggregationOperatorUc),
         write_select_attribute(QueryId,
                                compile,
                                [AggregationOperator, '(', TableAlias, '.', attribute_name(AttributeName), ')'|T],
@@ -3687,7 +3687,7 @@ write_select_for_insert_select_constant @
                                compile,
                                ['? AS ', attribute_name(AttributeName)|T],
                                T,
-                               selection_constant(Schema, InsertTableName, AttributeName, Variable)). 
+                               selection_constant(Schema, InsertTableName, AttributeName, Variable)).
 
 
 write_select_for_insert_plain_attribute @
@@ -3802,15 +3802,15 @@ collect_select_attributes @
 finished_collecting_select_attributes @
         collect_select_attributes(_, Tail)
         <=>
-        Tail = [].       
+        Tail = [].
 
 actually_write_select_attributes(_, _, []).
 actually_write_select_attributes(QueryId, _PreviousCompileInstruction, [select_info(CompileInstruction, Tokens, Tail, Attribute)|More]):-
         %instruction_conjunction(PreviousCompileInstruction, CompileInstruction, Conjunction),
         write_select_attribute(QueryId, CompileInstruction, Tokens, Tail, Attribute),
         actually_write_select_attributes(QueryId, CompileInstruction, More).
-        
-        
+
+
 
 write_select_attribute_with_leading_comma @
         select_attribute_written(QueryId)
@@ -3849,7 +3849,7 @@ in_line_join_on @
         attribute_binding(QueryId, attribute(Schema, TableAliasA, AttributeNameA), JoinVariableA),
         attribute_binding(QueryId, attribute(Schema, TableAliasB, AttributeNameB), JoinVariableB)
         ==>
-        dbms(Schema, 'Microsoft SQL Server'),      
+        dbms(Schema, 'Microsoft SQL Server'),
         var(JoinVariableA),
         JoinVariableA == JoinVariableB,
         TableAliasA \== TableAliasB
@@ -3864,7 +3864,7 @@ in_line_join_on @
         attribute_binding(QueryId, attribute(Schema, TableAliasA, AttributeNameA), JoinVariableA),
         attribute_binding(QueryId, attribute(Schema, TableAliasB, AttributeNameB), JoinVariableB)
         ==>
-        dbms(Schema, 'SQLite'),      
+        dbms(Schema, 'SQLite'),
         var(JoinVariableA),
         JoinVariableA == JoinVariableB,
         TableAliasA \== TableAliasB
@@ -3897,7 +3897,7 @@ in_line_join_on_postgres_select_insert_or_delete @
         memberchk(QueryType, [select, insert, delete]),
         var(JoinVariableA),
         JoinVariableA == JoinVariableB,
-        TableAliasA \== TableAliasB        
+        TableAliasA \== TableAliasB
         |
         join_variable(JoinVariableA),
         join_variable(JoinVariableB),
@@ -3944,16 +3944,16 @@ cleanup_create_in_line_joins @
 
 explicit_join_on_postgres_update @
         create_join_points,
-        update_table_alias(QueryId, _, _, TargetAlias),  
+        update_table_alias(QueryId, _, _, TargetAlias),
         attribute_binding(QueryId, attribute(Schema, TableAliasA, AttributeNameA), JoinVariableA),
         attribute_binding(QueryId, attribute(Schema, TableAliasB, AttributeNameB), JoinVariableB)
         \
         % Use up the comparison/4 as we don't want it in the WHERE clause
         comparison(QueryId, JoinVariableA, ==, JoinVariableB)
-        <=>  
+        <=>
         dbms(Schema, 'PostgreSQL'),
         var(JoinVariableA),
-        var(JoinVariableB),  
+        var(JoinVariableB),
         TableAliasA \== TableAliasB, TableAliasA \== TargetAlias, TableAliasB \== TargetAlias
         |
         join_variable(JoinVariableA),
@@ -3968,11 +3968,11 @@ explicit_join_on_postgres_other @
         \
         % Use up the comparison/4 as we don't want it in the WHERE clause
         comparison(QueryId, JoinVariableA, ==, JoinVariableB)
-        <=>  
+        <=>
         dbms(Schema, 'PostgreSQL'),
         memberchk(Type, [select, insert, delete]),
         var(JoinVariableA),
-        var(JoinVariableB),  
+        var(JoinVariableB),
         TableAliasA \== TableAliasB
         |
         join_variable(JoinVariableA),
@@ -3987,11 +3987,11 @@ explicit_join_on @
         attribute_binding(QueryId, attribute(Schema, TableAliasB, AttributeNameB), JoinVariableB)
         \
         % Use up the comparison/4 as we don't want it in the WHERE clause
-        comparison(QueryId, JoinVariableA, ==, JoinVariableB)  
+        comparison(QueryId, JoinVariableA, ==, JoinVariableB)
         <=>
         dbms(Schema, 'Microsoft SQL Server'),
         var(JoinVariableA),
-        var(JoinVariableB),  
+        var(JoinVariableB),
         TableAliasA \== TableAliasB
         |
         join_variable(JoinVariableA),
@@ -4004,11 +4004,11 @@ explicit_join_on @
         attribute_binding(QueryId, attribute(Schema, TableAliasB, AttributeNameB), JoinVariableB)
         \
         % Use up the comparison/4 as we don't want it in the WHERE clause
-        comparison(QueryId, JoinVariableA, ==, JoinVariableB)  
+        comparison(QueryId, JoinVariableA, ==, JoinVariableB)
         <=>
         dbms(Schema, 'SQLite'),
         var(JoinVariableA),
-        var(JoinVariableB),  
+        var(JoinVariableB),
         TableAliasA \== TableAliasB
         |
         join_variable(JoinVariableA),
@@ -4024,7 +4024,7 @@ avoid_duplicate_join_ons @
         true.
 
 
-search_for_join_aliases_0 @             
+search_for_join_aliases_0 @
         join(_, Join, LhsJoin, _, RhsJoin)
         ==>
         search_for_join_aliases(Join, lhs, LhsJoin),
@@ -4057,7 +4057,7 @@ search_for_join_aliases_3 @
 % and capture the ON clause. This formula creates the two join points in SubQueryId
 % which is where the on/4 term goes and implicit_join_sql/3 looks.
 % Note that this is only used for explicit on clauses.
-search_for_join_aliases_4 @             
+search_for_join_aliases_4 @
         implicit_join(QueryId, _, SubQueryId),
         update_table_alias(QueryId, _Schema, _TableName, TableAlias)
         ==>
@@ -4137,7 +4137,7 @@ resolve_join_points_3 @
 
 resolve_join_points_4 @
         % These come from on clauses
-        attribute_binding(QueryId, attribute(Schema, TableAliasLhs, AttributeNameLhs), JoinVariableA), 
+        attribute_binding(QueryId, attribute(Schema, TableAliasLhs, AttributeNameLhs), JoinVariableA),
         attribute_binding(QueryId, attribute(Schema, TableAliasRhs, AttributeNameRhs), JoinVariableB),
         join_alias(Join, lhs, TableAliasLhs),
         join_alias(Join, rhs, TableAliasRhs)
@@ -4166,7 +4166,7 @@ resolve_join_points_5 @
         |
         join_variable(JoinVariable),
         NewOn =.. [Operator, TableAlias-JoinVariable, Rhs].
-     
+
 
 resolve_join_points_6 @
         attribute_binding(_, attribute(_, TableAlias, _), JoinVariable),
@@ -4179,7 +4179,7 @@ resolve_join_points_6 @
         |
         join_variable(JoinVariable),
         NewOn =.. [Operator, Lhs, TableAlias-JoinVariable].
-     
+
 
 resolve_join_points_7 @
         resolve_join_points(_, On, _)
@@ -4195,7 +4195,7 @@ join_variable_must_be_a_variable @
         true.
 
 
-join_variable_is_unique @ 
+join_variable_is_unique @
         join_variable(Variable)
         \
         join_variable(Variable)
@@ -4257,7 +4257,7 @@ write_join_leaf_unless_target @
         |
         write_sql(QueryId, compile, join, [table_name(TableName), ' ', TableAlias|T], T, [], []).
 
-write_join_leaf @             
+write_join_leaf @
         join_leaf(Join, TableAlias),
         query_table_alias(QueryId, Schema, TableName, TableAlias)
         \
@@ -4273,7 +4273,7 @@ write_lock_hint @
         <=>
         dbms(Schema, 'Microsoft SQL Server')
         |
-        write_sql(QueryId, compile, join, [' WITH (NOLOCK)'|T], T, [], []).  
+        write_sql(QueryId, compile, join, [' WITH (NOLOCK)'|T], T, [], []).
 
 % Ignored for PostgreSQL and SQLite
 cleanup_write_lock_hint @
@@ -4301,7 +4301,7 @@ write_join_clause @
         ( debugging(index_suggestions) ->
             on_to_where(Schema, On, RestrictionTree),
             cql_suggest_indices(RestrictionTree, QueryId)
-        
+
         ; otherwise ->
             true
         ).
@@ -4417,7 +4417,7 @@ where_restriction_clause @
         <=>
         collect_indices(QueryId),
         write_sql(QueryId, compile, where, [' WHERE '|T], T, [], []),
-        write_restriction_tree(QueryId, where, RestrictionTree), 
+        write_restriction_tree(QueryId, where, RestrictionTree),
         phase(QueryId, group_by).
 
 sqlite_must_have_where @
@@ -4430,7 +4430,7 @@ sqlite_must_have_where @
         |
         write_sql(QueryId, compile, where, [' WHERE 1=1 '|T], T, [], []),
         phase(QueryId, group_by).
-        
+
 
 no_where_restriction_clause @
         phase(QueryId, where)
@@ -4443,7 +4443,7 @@ having_restriction_clause @
         restriction_tree(QueryId, having, RestrictionTree)
         <=>
         write_sql(QueryId, compile, having, [' HAVING '|T], T, [], []),
-        write_restriction_tree(QueryId, having, RestrictionTree), 
+        write_restriction_tree(QueryId, having, RestrictionTree),
         phase(QueryId, order_by).
 
 
@@ -4459,7 +4459,7 @@ suggest_indices @
         <=>
         ( debugging(index_suggestions) ->
             cql_suggest_indices(RestrictionTree, QueryId)
-        
+
         ; otherwise ->
             true
         ).
@@ -4469,15 +4469,15 @@ write_restriction_clause @
         <=>
         ( RestrictionTree = or(Lhs, Rhs) ->
             Operator = 'OR'
-            
+
         ; RestrictionTree = and(Lhs, Rhs) ->
             Operator = 'AND'
         )
-        |    
+        |
         write_sql(QueryId, compile, where, ['('|T1], T1, [], []),
-        write_restriction_tree(QueryId, RestrictionType, Lhs),  
+        write_restriction_tree(QueryId, RestrictionType, Lhs),
         write_sql(QueryId, compile, where, [' ', Operator, ' '|T2], T2, [], []),
-        write_restriction_tree(QueryId, RestrictionType, Rhs), 
+        write_restriction_tree(QueryId, RestrictionType, Rhs),
         write_sql(QueryId, compile, where, [')'|T3], T3, [], []).
 
 write_restriction_leaf_for_ignore_if_null_on_rhs @
@@ -4565,7 +4565,7 @@ not_in_list_comparison_with_no_elements @
         true
         |
         write_sql(QueryId, CompileInstruction, RestrictionType, ['1 = 1'|T], T, [], []).
-  
+
 write_list_comparison_with_collation @
         query_table_alias(_, Schema, TableName, TableAlias)
         \
@@ -4574,17 +4574,17 @@ write_list_comparison_with_collation @
         is_list(List),
         odbc_data_type(Schema, TableName, AttributeName, OdbcDataType),
         collatable_odbc_data_type(OdbcDataType),
-        
+
         ( Operator == (==) ->
             ListOperator = 'IN'
-        
+
         ; Operator == (\==) ->
             ListOperator = 'NOT IN'
         )
         |
         % Duplicate the restriction to avoid the index scan that would result from
         % using the collation comparison alone
-        % but only for SQL Server  
+        % but only for SQL Server
         ( collation(Schema, Collation)->
            write_sql(QueryId, compile, RestrictionType, [TableAlias, '.', attribute_name(AttributeName)|T1], T1, [], []),
            write_sql(QueryId, compile, RestrictionType, [' ', Collation, ' ', ListOperator, ' ('|T2], T2, [], []),
@@ -4606,7 +4606,7 @@ write_list_comparison_without_collation @
         is_list(List),
         ( Operator == (==) ->
             ListOperator = 'IN'
-        
+
         ; Operator == (\==) ->
             ListOperator = 'NOT IN'
         )
@@ -4626,12 +4626,12 @@ write_runtime_list @
 
         ( Operator == (==) ->
             ListOperator = 'IN'
-        
+
         ; Operator == (\==) ->
             ListOperator = 'NOT IN'
         ),
         odbc_data_type(Schema, TableName, AttributeName, OdbcDataType),
-        
+
         ( collatable_odbc_data_type(OdbcDataType), collation(Schema, Collation)->
             true
         ;
@@ -4656,7 +4656,7 @@ write_runtime_list @
         write_sql(QueryId,
                   SubInstruction,
                   RestrictionType,
-                  [')'|T4], 
+                  [')'|T4],
                   T4,
                   [],
                   []),
@@ -4667,10 +4667,10 @@ write_runtime_list @
                   T5,
                   [],
                   []).
-        
 
 
-        
+
+
 write_rhs_null_comparison @
         write_restriction(QueryId, _CompileInstruction, RestrictionType, attribute(_, TableAlias, AttributeName), Operator, {null})
         <=>
@@ -4746,7 +4746,7 @@ write_restriction_between_aggregation_sub_select_and_attribute @
         query_table_alias(_, _, TableName, TableAlias)
         \
         write_restriction(QueryId,
-                          CompileInstruction, 
+                          CompileInstruction,
                           RestrictionType,
                           aggregation_sub_query_sql(AggregationTableName, AggregationAttributeName, Sql, Tail, Inputs),
                           Operator,
@@ -4770,7 +4770,7 @@ write_restriction_between_aggregation_sub_select_and_attribute @
 
 write_restriction_between_expression_and_aggregation_sub_select @
         write_restriction(QueryId,
-                          CompileInstruction,                          
+                          CompileInstruction,
                           RestrictionType,
                           Expression,
                           Operator,
@@ -4815,14 +4815,14 @@ write_restriction_between_aggregation_sub_select_and_expression @
                             Operator,
                             Expression).
 
- 
+
 write_restriction_between_expressions @
         write_restriction(QueryId, CompileInstruction, RestrictionType, LhsExpression, Operator, RhsExpression)
         <=>
         RestrictionType \== having   % Could be an aggregation e.g. sum(x) - leave those for the HAVING phase
         |
         ( representative_attribute(LhsExpression+RhsExpression, Schema, TableName, AttributeName) ->
-            true       
+            true
         ; otherwise ->
             throw(format('Cannot find attribute to determine expression data type in ~w or in ~w', [LhsExpression, RhsExpression]))
         ),
@@ -4854,12 +4854,12 @@ representative_attribute_1 @
         RepresentativeTableName = TableName,
         RepresentativeAttributeName = AttributeName.
 
-representative_attribute_2 @ 
+representative_attribute_2 @
         representative_attribute(Expression, Schema, TableName, AttributeName)
         <=>
         nonvar(Expression),
         Expression =.. [_|L],
-        
+
         ( L = [Lhs, Rhs] ->
             ( representative_attribute(Lhs, Schema, TableName, AttributeName)
             ; representative_attribute(Rhs, Schema, TableName, AttributeName)
@@ -4908,15 +4908,15 @@ write_having_comparison_between_aggregation_and_expression @
           Expression = ignore_if_null(ApplicationValue) ->
             IgnoreExpression =.. [Functor, TableAlias, AttributeName],
             E = ignore_if_null(IgnoreExpression, ApplicationValue)
-        
+
         ; otherwise ->
             E = Expression
         ),
         odbc_data_type(Schema, TableName, AttributeName, OdbcDataType),
-        
+
         ( Functor == count ->
             OdbcDataTypeOverride = integer
-        
+
         ; otherwise ->
             true
         )
@@ -4954,7 +4954,7 @@ write_having_comparison_between_expression_and_aggregation @
 
         ( Functor == count ->
             OdbcDataTypeOverride = integer
-        
+
         ; otherwise ->
             true
         )
@@ -5015,7 +5015,7 @@ write_restriction_with_collation @  % Prolog-style atom matching i.e. case-sensi
                 write_sql(QueryId, CompileInstruction, RestrictionType, [' ', SqlOperator, ' '|T3], T3, [], []),
                 write_restriction_expression(QueryId, CompileInstruction, RestrictionType, OdbcDataType, OdbcDataTypeOverride, Schema, TableName, AttributeName, Rhs)
             ),
-            write_sql(QueryId, CompileInstruction, RestrictionType, [' AND '|T4], T4, [], [])            
+            write_sql(QueryId, CompileInstruction, RestrictionType, [' AND '|T4], T4, [], [])
         ; otherwise->
             true
         ),
@@ -5039,7 +5039,7 @@ write_restriction_with_collation @  % Prolog-style atom matching i.e. case-sensi
             write_sql(QueryId, CompileInstruction, RestrictionType, [' ', BaseSqlOperator, ' '|T7], T7, [], []),
             write_restriction_expression(QueryId, CompileInstruction, RestrictionType, OdbcDataType, OdbcDataTypeOverride, Schema, TableName, AttributeName, Rhs)
         ).
-                    
+
 
 write_restriction_without_collation @
         write_restriction_1(QueryId, CompileInstruction, RestrictionType, OdbcDataType, OdbcDataTypeOverride, Schema, TableName, AttributeName, Lhs, ComparisonOperator, Rhs)
@@ -5067,7 +5067,7 @@ write_restriction_without_collation @
             ; otherwise->
                 C1 = CompileInstruction
             ),
-            instruction_conjunction(CompileInstruction, if_null(Variable), C2), 
+            instruction_conjunction(CompileInstruction, if_null(Variable), C2),
             write_sql(QueryId, C1, RestrictionType, [' ', SqlOperator, ' '|T1], T1, [], []),
             write_restriction_expression(QueryId, C1, RestrictionType, OdbcDataType, OdbcDataTypeOverride, Schema, TableName, AttributeName, Rhs),
             ( RestrictionType == where ->
@@ -5138,13 +5138,13 @@ write_restriction_expression_1 @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, _, _, _, _, _, tokens_and_parameters(Tokens, Tail, OdbcParameters))
         <=>
         write_sql(QueryId,
-                  CompileInstruction, 
+                  CompileInstruction,
                   RestrictionType,
                   Tokens,
                   Tail,
                   OdbcParameters,
                   []).
-      
+
 write_restriction_expression_2 @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, _, _, _, _, _, attribute(_, TableAlias, AttributeName))
         <=>
@@ -5160,7 +5160,7 @@ write_restriction_expression_3 @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, _, OdbcDataTypeOverride, Schema, TableName, AttributeName, equality_restriction(Variable))
         <=>
         write_sql(QueryId,
-                  CompileInstruction, 
+                  CompileInstruction,
                   RestrictionType,
                   [?|T],
                   T,
@@ -5172,12 +5172,12 @@ write_restriction_expression_4a @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, _, OdbcDataTypeOverride, Schema, TableName, AttributeName, ignore_if_null(Aggregation, Variable))
         <=>
         functor(Aggregation, Functor, 2),
-        aggregation_operator(Functor)  
+        aggregation_operator(Functor)
         |
         arg(1, Aggregation, TableAlias),
         arg(2, Aggregation, AttributeName),
         write_sql(QueryId,
-                  CompileInstruction, 
+                  CompileInstruction,
                   RestrictionType,
                   ['COALESCE(?, ', Functor, '(', TableAlias, '.', attribute_name(AttributeName), '))'|T],
                   T,
@@ -5188,7 +5188,7 @@ write_restriction_expression_4 @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, _, OdbcDataTypeOverride, Schema, TableName, AttributeName, ignore_if_null(TableAlias, Variable))
         <=>
         write_sql(QueryId,
-                  CompileInstruction, 
+                  CompileInstruction,
                   RestrictionType,
                   ['COALESCE(?, ', TableAlias, '.', attribute_name(AttributeName), ')'|T],
                   T,
@@ -5204,14 +5204,14 @@ write_restriction_expression_5 @
         |
         where_restriction_variable(Variable),
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, OdbcDataType, OdbcDataTypeOverride, Schema, TableName, AttributeName, Attribute).
-  
+
 write_restriction_expression_6 @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, _, OdbcDataTypeOverride, Schema, TableName, AttributeName, Variable)
         <=>
         atomic_application_value(Variable)
         |
         write_sql(QueryId,
-                  CompileInstruction, 
+                  CompileInstruction,
                   RestrictionType,
                   [?|T],
                   T,
@@ -5227,7 +5227,7 @@ write_restriction_expression_7 @
         write_sql(QueryId, CompileInstruction,  RestrictionType, [Operator|T], T, [], []),
         % We unset the OdbcDataTypeOverride here
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, OdbcDataType, OdbcDataTypeOverride, Schema, TableName, AttributeName, Rhs).
-  
+
 write_restriction_expression_8 @
         write_restriction_expression(QueryId, CompileInstruction, RestrictionType, OdbcDataType, OdbcDataTypeOverride, Schema, TableName, AttributeName, Expression)
         <=>
@@ -5257,7 +5257,7 @@ write_restriction_expression_9 @
         <=>
         instruction_conjunction(CompileInstruction, if_not_var(Var), NewInstruction),
         write_sql(QueryId,
-                  NewInstruction, 
+                  NewInstruction,
                   RestrictionType,
                   [?|T],
                   T,
@@ -5285,7 +5285,7 @@ write_sub_query @
         <=>
         ( SubQueryType == exists ->
             Token = 'EXISTS'
-      
+
         ; SubQueryType == (\+ exists) ->
             Token = 'NOT EXISTS'
         )
@@ -5307,7 +5307,7 @@ write_in_list_2 @
         write_in_list(QueryId, RestrictionType, Schema, TableName, AttributeName, [ApplicationValue|ApplicationValues])
         <=>
         write_sql(QueryId, compile, RestrictionType, [?|T], T, [odbc_parameter(Schema, TableName, AttributeName, ApplicationValue, where_value, _)], []),
-        next_in_list_value_needs_comma(QueryId),  
+        next_in_list_value_needs_comma(QueryId),
         write_in_list(QueryId, RestrictionType, Schema, TableName, AttributeName, ApplicationValues).
 
 
@@ -5361,7 +5361,7 @@ write_group_by_attribute_without_trailing_comma @
 should_not_be_any_group_by_constraints_left_over @
         check_for_orphan_group_bys,
         group_by(_, GroupBy),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Unused GROUP BY ~w in CQL: ~w', [GroupBy, Cql])).
 
@@ -5382,7 +5382,7 @@ no_order_by @
         phase(QueryId, order_by)
         <=>
         phase(QueryId, union).
-   
+
 
 write_order_bys @
         write_order_bys(QueryId, [OrderBy|OrderBys])
@@ -5403,10 +5403,10 @@ write_order_by_aggregate @
         <=>
         AggregationTerm =.. [AggregationOperator, AttributeName],
         aggregation_operator(AggregationOperator),
-        
+
         ( OrderBy == +(Variable) ->
             Direction = 'ASC'
-      
+
         ; OrderBy == -(Variable) ->
             Direction = 'DESC'
         ),
@@ -5423,7 +5423,7 @@ write_order_by @
         <=>
         ( OrderBy == +(Variable) ->
             Direction = 'ASC'
-      
+
         ; OrderBy == -(Variable) ->
             Direction = 'DESC'
         )
@@ -5451,7 +5451,7 @@ write_order_by_attribute_without_trailing_comma @
 should_not_be_any_write_order_by_constraints_left_over @
         check_for_orphan_order_bys,
         write_order_by(_, OrderBy),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Unused ORDER BY ~w in CQL: ~w', [OrderBy, Cql])).
 
@@ -5559,7 +5559,7 @@ write_sql @
             ; otherwise->
                 ( Position \== top->
                     append(ExistingFromParameters, [CompileInstruction:OdbcParameters], NewFromParameters),
-                    NewOdbcParameters = ExistingOdbcParameters                
+                    NewOdbcParameters = ExistingOdbcParameters
                 ; otherwise->
                     append(ExistingOdbcParameters, [CompileInstruction:OdbcParameters], NewOdbcParameters),
                     NewFromParameters = ExistingFromParameters
@@ -5623,7 +5623,7 @@ instantiate_sub_query @
 orphan_write_restriction @
         check_query,
         write_restriction(_, _, _, ApplicationValueLhs, Operator, ApplicationValueRhs),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Unused restriction: ~w ~w ~w in CQL: ~w', [ApplicationValueLhs, Operator, ApplicationValueRhs, Cql])).
 
@@ -5668,7 +5668,7 @@ fetch_implicit_join_sql @
 check_for_joins @
         check_query,
         join_on(TableAliasA, AttributeNameA, TableAliasB, AttributeNameB),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Unused JOIN point ~w (check join operator present) in CQL: ~w',
                      [join_on(TableAliasA, AttributeNameA, TableAliasB, AttributeNameB), Cql])).
@@ -5679,7 +5679,7 @@ check_for_unused_select_bindings @
         % the SELECT clause) or been explicitly discarded.  Any left behind indicate a problem.
         check_query,
         select_binding(_, X, Attribute, _),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Unused SELECT binding (missing GROUP BY?): ~n~w ~n~n~w~n~nin CQL: ~w', [X, Attribute, Cql])).
 
@@ -5687,7 +5687,7 @@ check_for_unused_select_bindings @
 check_for_unused_join_on_comparisons @
         check_query,
         write_join_ons(_, On),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Unused join ON comparison <~w> in CQL: ~w', [On, Cql])).
 
@@ -5834,16 +5834,16 @@ odbc_state_change_statement_not_update @
         FromTail = SqlRestrictionTokens,
         RestrictionTail = [],
         AllSqlTokens = SqlTokens,
-        append(SelectOdbcParameters, FromParameters, OdbcParameters),                
+        append(SelectOdbcParameters, FromParameters, OdbcParameters),
         create_cql_pre_state_change_select_sql(QueryId, StateChangeType, SqlFromTokens, TableName, OdbcParameters),
         ( StateChangeType == delete ->
             create_cql_state_change_statistics_sql(QueryId, StateChangeType, SqlFromTokens, TableName, OdbcParameters)
         ; otherwise->
             true
-        ),        
+        ),
         compile_tokens(AllSqlTokens, Sql),
         cql_odbc_state_change_statement(QueryId, StateChangeType, Schema, TableName, Sql, OdbcParameters, Outputs).
-  
+
 
 execute_state_change_query @
         cql_statement_location(FileName, LineNumber)
@@ -5865,7 +5865,7 @@ execute_state_change_query @
                                            statistic_monitored_attribute_change(Schema, TableName, MonitoredAttribute, ApplicationValue, 1))
                                 ; otherwise ->
                                     true
-                                ),            
+                                ),
                                 odbc_data_types_and_inputs(OdbcParameters, OdbcDataTypes, OdbcInputs),
                                 log_state_change(Sql, StateChangeType, OdbcInputs),
                                 ( odbc_prepare_and_execute(OdbcCachingOption, Connection, FileName, LineNumber, Sql, OdbcDataTypes, OdbcInputs, Result)->
@@ -5922,7 +5922,7 @@ strip_compile_instructions([_:Outputs|More], Result):-
 strip_compile_instructions([Output|O1], [Output|O2]):-
         strip_compile_instructions(O1, O2).
 
- 
+
 collect_external_variables_1 @
         conjunction_variable(_, ExternalVariable, ConjunctionVariable)
         \
@@ -5935,7 +5935,7 @@ do_not_create_a_union_if_there_is_an_order_by @
         phase(QueryId, union),
         order_bys(QueryId, _)
         <=>
-        true.     
+        true.
 
 
 union_if_external_variables_the_same_and_there_is_no_order_by @
@@ -5958,7 +5958,7 @@ union_if_external_variables_the_same_and_there_is_no_order_by @
         UnionSqlTokens = SqlTokensA,
         sql_statement(QueryIdA, UnionSqlTokens, NewTail, A, A, B, B, SelectOdbcParameters, FromOdbcParameters, Outputs),
         remove_query(QueryIdB, QueryIdA),
-        
+
         ( debugging(cql(union)) ->
             prolog_load_context(source, FileName),
             prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)),
@@ -5971,7 +5971,7 @@ union_if_external_variables_the_same_and_there_is_no_order_by @
 join_has_no_on_clause @
         check_for_unjoined_tables,
         write_join(_, _),
-        original_cql(Cql)  
+        original_cql(Cql)
         <=>
         throw(format('Generated SQL has a JOIN with no ON clause.  Ensure each table shares a variable with a preceding table: ~w',
                      [Cql])).
@@ -5985,7 +5985,7 @@ update_join_has_no_source_table @
         |
         throw(format('UPDATE join has no source table', [])).
 
-  
+
 odbc_select_statement @
         prepare_odbc_statements
         \
@@ -6068,15 +6068,15 @@ execute_select(Schema, Connection, OdbcCachingOption, FileName, LineNumber, Sql,
                                    debug_after(Reason, Outputs)),  % This handles fail ok, but not exceptions
         ( var(Reason) ->
             debug_after(exit, Outputs)
-        
+
         ; otherwise ->
             true
         ).
 
 
 complete_execution(OdbcCachingOption, Connection, FileName, LineNumber, Sql, OdbcDataTypes, OdbcInputs, Outputs) :-
-        odbc_prepare_and_execute(OdbcCachingOption, Connection, FileName, LineNumber, Sql, OdbcDataTypes, OdbcInputs, Result),    % BTP  
-        Result =.. [row|OdbcOutputs],  
+        odbc_prepare_and_execute(OdbcCachingOption, Connection, FileName, LineNumber, Sql, OdbcDataTypes, OdbcInputs, Result),    % BTP
+        Result =.. [row|OdbcOutputs],
         bind_application_values(Outputs, OdbcOutputs),
         bind_variables_to_nulls(Outputs).
 
@@ -6110,7 +6110,7 @@ cql_temporary_column_name(Schema, bit, value_bit, smallint):-dbms(Schema, 'Postg
 post_execute_cleanup @
         post_execute_cleanup, cql_statement_location(_, _) <=> true.
 
-        
+
 % Convert any remaining variables to nulls e.g. in
 %
 % x :: [a-A] *== (y :: [a-A, b-B] =*= z :: [b-B])
@@ -6155,7 +6155,7 @@ odbc_prepare_and_execute(do_not_cache_odbc_statement, Connection, _, _, Sql, Odb
         setup_call_cleanup(odbc_prepare(Connection, Sql, OdbcDataTypes, Statement),
                            odbc_execute_with_statistics(Statement, OdbcInputs, OdbcDataTypes, Result),
                            odbc_free_statement(Statement)).
-               
+
 odbc_prepare_and_execute(cache_odbc_statement, Connection, FileName, LineNumber, Sql, OdbcDataTypes, OdbcInputs, Result) :-
         odbc_execute_with_statement_cache(Connection, FileName, LineNumber, Sql, OdbcInputs, OdbcDataTypes, Result).
 
@@ -6224,6 +6224,7 @@ odbc_data_types_and_inputs(OdbcParameters, OdbcDataTypes, OdbcInputs) :-
             TransactionId = {null},
             TransactionTimestamp = {null}
         ),
+        writeln(odbc_data_types_and_inputs_1(OdbcParameters, UserId, TransactionId, TransactionTimestamp, OdbcDataTypes, OdbcInputs)),
         odbc_data_types_and_inputs_1(OdbcParameters,
                                      UserId,
                                      TransactionId,
@@ -6250,7 +6251,7 @@ odbc_data_types_and_inputs_1([OdbcParameter|OdbcParameters],
         odbc_data_types_and_inputs_1(OdbcParameters,
                                      UserId,
                                      TransactionId,
-                                     TransactionTimestamp,                             
+                                     TransactionTimestamp,
                                      OdbcDataTypes,
                                      OdbcInputs).
 
@@ -6260,22 +6261,22 @@ odbc_data_types_and_inputs_1([OdbcParameter|OdbcParameters],
                              TransactionTimestamp,
                              OdbcDataTypes,
                              OdbcInputs) :-
-        
+
         ( OdbcParameter = odbc_parameter(_, _, _, _, OdbcParameterUse, _),
           OdbcParameterUse == evaluated_update_attribute ->
             true
-        
+
         ; OdbcParameter = odbc_explicit_type_parameter(_, _, OdbcParameterUse),
           OdbcParameterUse == evaluated_update_attribute ->
             true
 
-        ; otherwise -> 
+        ; otherwise ->
             throw(error(domain_error(odbc_parameter, OdbcParameter), _))
         ),
         odbc_data_types_and_inputs_1(OdbcParameters,
                                      UserId,
                                      TransactionId,
-                                     TransactionTimestamp,                             
+                                     TransactionTimestamp,
                                      OdbcDataTypes,
                                      OdbcInputs).
 
@@ -6291,7 +6292,7 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
             ; otherwise ->
                 odbc_data_type(Schema, TableName, AttributeName, OdbcDataType_1)
             )
-        
+
         ; OdbcParameter = odbc_explicit_type_parameter(ExplicitOdbcDataType, ApplicationValue, OdbcParameterUse) ->
             OdbcDataType_1 = ExplicitOdbcDataType,
             Schema = {null},
@@ -6309,11 +6310,11 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
             % Accordining to http://msdn.microsoft.com/en-us/library/aa258832(SQL.80).aspx maximum precision in SQL Server is 38.
             % Allowing 20 decimal places means numbers up to 10**18 (a million trillion) can be handled.
             OdbcDataType = decimal(38, 20)
-        
+
         ; otherwise ->
              OdbcDataType = OdbcDataType_1
         ),
-        
+
         ( OdbcParameterUse == insert_value
         ; OdbcParameterUse == update_value
         ; OdbcParameterUse == where_value
@@ -6327,17 +6328,21 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
         ; otherwise ->
             Qualifiers = []
         ),
-        
+
         ( ( AttributeName == inserted_
           ; AttributeName == updated_
           ),
           ApplicationValue == {timestamp} ->
-            timestamp_to_unambiguous_atom(TransactionTimestamp, OdbcInput)
-      
+            % FIXME: This discards a lot of possibly useful information
+            stamp_date_time(TransactionTimestamp, date(Year, Month, Day, Hour, Minute, Seconds, _Offset, _Timezone, _DST), local),
+            Sec is integer(float_integer_part(Seconds)),
+            MilliSec is integer(float_fractional_part(Seconds)*1000),
+            timestamp_to_unambiguous_atom(timestamp(Year, Month, Day, Hour, Minute, Sec, MilliSec), OdbcInput)
+
         ; AttributeName == transaction_id_,
           ApplicationValue == {transaction_id} ->
             OdbcInput = TransactionId
-      
+
         ; ( AttributeName == inserted_by_
           ; AttributeName == updated_by_
           ),
@@ -6352,7 +6357,7 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
                                             AttributeName,
                                             Qualifiers,
                                             OdbcInput)
-      
+
         ; nonvar(ApplicationValue),
           ApplicationValue = error(_, _) ->
             application_value_to_odbc_value(ApplicationValue,
@@ -6372,10 +6377,10 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
                                             AttributeName,
                                             Qualifiers,
                                             OdbcInput)
-            
+
         ; otherwise ->
             % Definitely a runtime exception (so use throw_exception to get full backtrace)
-            throw_exception(application_value_unmappable,   
+            throw_exception(application_value_unmappable,
                             'The value /~w/ being written to ~w.~w.~w cannot be mapped to a term compatible with the ODBC interface',
                             [ApplicationValue, Schema, TableName, AttributeName])
         ).
@@ -6410,7 +6415,7 @@ bind_application_values([Output|Outputs],
             ( rational(V),
               rational(ApplicationValue) ->
                 ApplicationValue =:= V
-            ; 
+            ;
                 ApplicationValue = V
             )
         ),
@@ -6420,7 +6425,7 @@ bind_application_values([Output|Outputs],
 determine_update_table_name_in_implicit_join @
         update_table_alias(QueryId, Schema, _, SourceAlias)
         \
-        implicit_join(QueryId, @, SubQueryId)  
+        implicit_join(QueryId, @, SubQueryId)
         <=>
         dbms(Schema, 'PostgreSQL'),
         % Don't try and translate it until we can!
@@ -6454,17 +6459,17 @@ determine_update_table_key @
         % Failing that, try an identity
         % Failing that, throw an exception
         ( database_key(Schema, TableName, _, InvolvedColumns, 'primary key')->
-            true      
+            true
         ; database_key(Schema, TableName, _, InvolvedColumns, unique)->
             true
         ; database_key(Schema, TableName, _, InvolvedColumns, identity)->
             true
         ; database_identity(Schema, TableName, InvolvedColumn)->
             InvolvedColumns = [InvolvedColumn]
-        ; otherwise->      
+        ; otherwise->
             throw_exception(cannot_join, 'Table ~w does not contain any keys. To do a LEFT OUTER JOIN in an update in PostgreSQL, you must add a key to the table you are trying to update', [TableName])
         ),
-        findall(InvolvedColumn-_, member(InvolvedColumn, InvolvedColumns), Key).  
+        findall(InvolvedColumn-_, member(InvolvedColumn, InvolvedColumns), Key).
 
 
 duplicate_attributes(StateChangeType,               % +
@@ -6494,7 +6499,7 @@ check_attributes_2 @
         <=>
         attribute_to_check(Schema, TableName, AttributeNameValuePair),
         attributes_to_check(QueryId, Schema, TableName, AttributeNameValuePairs).
- 
+
 check_attributes_3 @
         attributes_to_check(_, _, _, [])
         <=>
@@ -6567,16 +6572,19 @@ embed_odbc_inputs([Atom|Atoms], [OdbcInput|OdbcInputs]) -->
         embed_odbc_inputs(Atoms, OdbcInputs).
 
 
-odbc_input_atom(timestamp(Year, Month, Day, Hour, Minute, Sec, MilliSec)) --> !,
-        {timestamp_to_unambiguous_atom(timestamp(Year, Month, Day, Hour, Minute, Sec, MilliSec), TimeStampAtom)},
+% FIXME: This obviously just discards a lot of information!
+odbc_input_atom(date(Year, Month, Day, Hour, Minute, Seconds, _Offset, _Timezone, _DST)) --> !,
+        {Sec is integer(float_integer_part(Seconds)),
+         MilliSec is integer(float_fractional_part(Seconds)*1000),
+         timestamp_to_unambiguous_atom(timestamp(Year, Month, Day, Hour, Minute, Sec, MilliSec), TimeStampAtom)},
         ['\'', TimeStampAtom, '\''].
 
 odbc_input_atom(Atom) -->  % This handle decimals as well, which at this point are atoms e.g. '10.000'
         {atom(Atom), !,
-         atomic_list_concat(SubAtoms, '\'', Atom),   
+         atomic_list_concat(SubAtoms, '\'', Atom),
          atomic_list_concat(SubAtoms, '\'\'', EscapedAtom)},
          ['\'', EscapedAtom, '\''].
-  
+
 odbc_input_atom(boolean(true)) --> !,
         ['1'].
 
@@ -6588,10 +6596,10 @@ odbc_input_atom({null}) --> !,
 
 odbc_input_atom(Integer) -->
         [Integer].
-  
+
 
 log_state_change @
-        cql_statement_location(FileName, LineNumber)  
+        cql_statement_location(FileName, LineNumber)
         \
         log_state_change(Sql, _, OdbcInputs)
         <=>
@@ -6601,7 +6609,7 @@ log_state_change @
                informational,
                'CQL\t~w\t~w\t   ~w\t~q\t(~w:~w)',
                [UserId, TransactionId, Sql, OdbcInputs, FileName, LineNumber]).
-  
+
 
 no_state_change_actions @
         no_state_change_actions(QueryId)
@@ -6666,7 +6674,7 @@ sql_restriction_parameters([_|T1], T2) :-
 
 
 
-no_statistics_changes @ 
+no_statistics_changes @
         create_cql_state_change_statistics_sql(_, _, _, _, _)
         <=>
         true.
@@ -6684,10 +6692,10 @@ create_cql_pre_state_change_select_sql_for_deletes @
         |
         OdbcParametersB = [odbc_parameter(Schema, TableName, PrimaryKeyAttributeName, _, update_value, _)|OdbcParametersA],
         sql_to_select_values_pre_state_change(StateChangeType, OdbcParametersB, StateChangeAttributeNames, TableAlias, OdbcRestrictionParameters, SelectSql, SqlFromTokens),
-        
+
         cql_pre_state_change_select_sql(QueryId, Schema, TableName, PrimaryKeyAttributeName, SelectSql, StateChangeAttributeNames, OdbcRestrictionParameters).
 
-  
+
 create_state_change_select_sql_for_updates @
         update_table_alias(QueryId, Schema, _, TableAlias)
         \
@@ -6702,17 +6710,17 @@ create_state_change_select_sql_for_updates @
             OdbcParametersB = OdbcParametersA
         ; memberchk(_:odbc_parameter(Schema, TableName, PrimaryKeyAttributeName, _, update_value, _), OdbcParametersA) ->
             OdbcParametersB = OdbcParametersA
-        ; 
+        ;
             OdbcParametersB = [odbc_parameter(Schema, TableName, PrimaryKeyAttributeName, _, update_value, _)|OdbcParametersA]
         ),
-        
+
         sql_to_select_values_pre_state_change(StateChangeType, OdbcParametersB, StateChangeAttributeNames, TableAlias, OdbcRestrictionParameters, SelectSql, SqlFromTokens),
         sql_to_select_values_post_state_change(TableName, StateChangeAttributeNames, PrimaryKeyAttributeName, PostUpdateSelectSql),
         odbc_data_type(Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyOdbcDataType),
-        
+
         cql_pre_state_change_select_sql(QueryId, Schema, TableName, PrimaryKeyAttributeName, SelectSql, StateChangeAttributeNames, OdbcRestrictionParameters),
         cql_post_state_change_select_sql(QueryId, StateChangeAttributeNames, PrimaryKeyOdbcDataType, PostUpdateSelectSql).
-  
+
 identify_row_arising_from_insert_postgres @
         postgres_identity(QueryId, Identity)
         \
@@ -6737,13 +6745,13 @@ identify_row_arising_from_insert_mssql @
         compile_tokens(['SELECT CAST(@@IDENTITY AS INTEGER), COLUMNPROPERTY(OBJECT_ID(\'', table_name(TableName), '\'),\'', attribute_name(PrimaryKeyAttributeName), '\',\'IsIdentity\')'], HalfCompiledSql),
         fully_compile_sql(HalfCompiledSql, [], [], Sql, _, _),
         odbc_query(Connection, Sql, row(Identity, IsIdentity)),
-      
+
         ( IsIdentity == 1 ->
             true
-        ; 
+        ;
             throw(format('~w.~w.~w is not an IDENTITY attribute', [Schema, TableName, PrimaryKeyAttributeName]))
         ),
-        
+
         updated_row_primary_key(QueryId, StateChangeType, Schema, TableName, PrimaryKeyAttributeName, Identity).
 
 % FIXME: SQLite
@@ -6765,7 +6773,7 @@ pre_state_change_select_statement @
                                    odbc_execute_with_statistics(PreparedStatement, OdbcInputs, OdbcDataTypes, Row),
                                    odbc_free_statement(PreparedStatement)),
                 Rows),
-        
+
         updated_rows(QueryId,
                      StateChangeType,
                      pre_state_change,
@@ -6792,7 +6800,7 @@ pre_state_change_statistics_statement @
 
 process_statistics_post_state_changes(_, _, [], _, _).
 process_statistics_post_state_changes(Schema, TableName, [AttributeName|AttributeNames], Values, N):-
-        memberchk(odbc_parameter(Schema, TableName, AttributeName, Value, update_value, _), Values), 
+        memberchk(odbc_parameter(Schema, TableName, AttributeName, Value, update_value, _), Values),
         statistic_monitored_attribute_change(Schema, TableName, AttributeName, Value, N),
         process_statistics_post_state_changes(Schema, TableName, AttributeNames, Values, N).
 
@@ -6823,16 +6831,16 @@ updated_rows @
                      [Row|Rows])
         <=>
         Row =.. [row|OdbcOutputs],
-      
+
         label_odbc_outputs(StateChangeAttributeNames, OdbcOutputs, Nvps),
         select(PrimaryKeyAttributeName-PrimaryKeyValue, Nvps, LabelledOdbcOutputs),
-      
+
         ( When == pre_state_change ->
             updated_row_primary_key(QueryId, StateChangeType, Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue)
-        ; 
+        ;
             true
         ),
-                               
+
         updated_row(QueryId,
                     StateChangeType,
                     When,
@@ -6841,7 +6849,7 @@ updated_rows @
                     PrimaryKeyAttributeName,
                     PrimaryKeyValue,
                     LabelledOdbcOutputs),
-      
+
         updated_rows(QueryId,
                      StateChangeType,
                      When,
@@ -6902,7 +6910,7 @@ group_by_clause(StateChangeType, StateChangeAttributeNames, TableAlias)-->
         state_change_select_statistic_sql_group(StateChangeType, StateChangeAttributeNames, TableAlias).
 
 sql_to_statistic_values_pre_state_change_1(StateChangeType, StateChangeAttributeNames, StateChangeAttributeNames, TableAlias) -->
-        ['SELECT '], 
+        ['SELECT '],
         state_change_select_statistic_sql(StateChangeType, StateChangeAttributeNames, TableAlias).
 
 
@@ -6919,11 +6927,11 @@ sql_to_select_values_pre_state_change_1(update, OdbcParameters, StateChangeAttri
         {odbc_parameters_for_state_change(OdbcParameters, update, KeyedStateChangeAttributeNames, OdbcRestrictionParameters, []),
         keysort(KeyedStateChangeAttributeNames, SortedKeyedStateChangeAttributeNames),
         strip_sort_keys(SortedKeyedStateChangeAttributeNames, StateChangeAttributeNames)},
-        ['SELECT '], 
+        ['SELECT '],
         state_change_select_select_sql(StateChangeAttributeNames, TableAlias).
 
-  
-odbc_parameters_for_state_change([], _, [], Tail, Tail). 
+
+odbc_parameters_for_state_change([], _, [], Tail, Tail).
 odbc_parameters_for_state_change([CompileInstruction:ListOfInstructions|Parameters],
                                  StateChangeType,
                                  AttributeNames,
@@ -6938,7 +6946,7 @@ odbc_parameters_for_state_change([CompileInstruction:ListOfInstructions|Paramete
             Output = [CompileInstruction:NewList|T1]
         ),
         odbc_parameters_for_state_change(Parameters, StateChangeType, AttributeNames, T1, Tail).
-  
+
 
 odbc_parameters_for_state_change([odbc_parameter(Schema, TableName, AttributeName, _, OdbcParameterUse, _)|OdbcParameters],  % +
                                  StateChangeType,                                                                            % +
@@ -6948,13 +6956,13 @@ odbc_parameters_for_state_change([odbc_parameter(Schema, TableName, AttributeNam
         ( OdbcParameterUse == update_value
         ; OdbcParameterUse == evaluated_update_attribute
         ),
-      
+
         ( is_state_change_attribute(StateChangeType, Schema, TableName, AttributeName)
         ; primary_key_column_name(Schema, TableName, AttributeName)
         ), !,
-      
-        cql_data_type(Schema, TableName, AttributeName, _, CharacterMaximumLength, _, _, _, _, _),            
-      
+
+        cql_data_type(Schema, TableName, AttributeName, _, CharacterMaximumLength, _, _, _, _, _),
+
         % Get this so we can select longest fields last and so avoid the INVALID DESCRIPTOR INDEX bug
         ( integer(CharacterMaximumLength) ->
             SortKey = CharacterMaximumLength
@@ -6963,7 +6971,7 @@ odbc_parameters_for_state_change([odbc_parameter(Schema, TableName, AttributeNam
         ; otherwise->
             SortKey = 0
         ),
-         
+
         odbc_parameters_for_state_change(OdbcParameters, StateChangeType, AttributeNames, OdbcRestrictionParameters, Tail).
 
 
@@ -6996,7 +7004,7 @@ odbc_parameters_for_state_change([_|OdbcParameters],
 
 state_change_select_select_sql([AttributeName], TableAlias) --> !,
         [TableAlias, '.', attribute_name(AttributeName)].
-  
+
 state_change_select_select_sql([AttributeName|Outputs], TableAlias) -->
         [TableAlias, '.', attribute_name(AttributeName), ', '],
         state_change_select_select_sql(Outputs, TableAlias).
@@ -7004,14 +7012,14 @@ state_change_select_select_sql([AttributeName|Outputs], TableAlias) -->
 
 state_change_select_statistic_sql(update, [AttributeName], TableAlias) --> !,
         [TableAlias, '.', attribute_name(AttributeName), ', count(', TableAlias, '.', attribute_name(AttributeName), ')'].
-  
+
 state_change_select_statistic_sql(update, [AttributeName|Outputs], TableAlias) -->
         [TableAlias, '.', attribute_name(AttributeName), ', count(', TableAlias, '.', attribute_name(AttributeName), '), '],
         state_change_select_statistic_sql(update, Outputs, TableAlias).
 
 state_change_select_statistic_sql(delete, [AttributeName], _) --> !,
         [attribute_name(AttributeName), ', count(', attribute_name(AttributeName), ')'].
-  
+
 state_change_select_statistic_sql(delete, [AttributeName|Outputs], TableAlias) -->
         [attribute_name(AttributeName), ', count(', attribute_name(AttributeName), '), '],
         state_change_select_statistic_sql(delete, Outputs, TableAlias).
@@ -7019,14 +7027,14 @@ state_change_select_statistic_sql(delete, [AttributeName|Outputs], TableAlias) -
 
 state_change_select_statistic_sql_group(update, [AttributeName], TableAlias) --> !,
         [TableAlias, '.', attribute_name(AttributeName)].
-  
+
 state_change_select_statistic_sql_group(update, [AttributeName|Outputs], TableAlias) -->
         [TableAlias, '.', attribute_name(AttributeName), ', '],
         state_change_select_statistic_sql_group(update, Outputs, TableAlias).
 
 state_change_select_statistic_sql_group(delete, [AttributeName], _) --> !,
         [attribute_name(AttributeName)].
-  
+
 state_change_select_statistic_sql_group(delete, [AttributeName|Outputs], TableAlias) -->
         [attribute_name(AttributeName), ', '],
         state_change_select_statistic_sql_group(delete, Outputs, TableAlias).
@@ -7036,7 +7044,7 @@ state_change_select_statistic_sql_group(delete, [AttributeName|Outputs], TableAl
 get_primary_key_attribute_name(Schema, TableName, PrimaryKeyAttributeName) :-
         ( primary_key_column_name(Schema, TableName, PrimaryKeyAttributeName) ->
             true
-        ; 
+        ;
             throw(format('No primary key attribute defined for ~w', [Schema:TableName]))
         ).
 
@@ -7052,7 +7060,7 @@ sql_to_select_values_post_state_change(TableName, StateChangeAttributeNames, Pri
         sql_to_select_values_post_state_change_1(TableName, StateChangeAttributeNames, PrimaryKeyAttributeName, PostUpdateSelectSqlTokens, []),
         compile_tokens(PostUpdateSelectSqlTokens, PostUpdateSelectSql).
 
-  
+
 sql_to_select_values_post_state_change_1(TableName, StateChangeAttributeNames, PrimaryKeyAttributeName) -->
         ['SELECT '],
         state_change_select_attributes(StateChangeAttributeNames),
@@ -7107,7 +7115,7 @@ post_state_change_values @
         post_state_change_select_statement(QueryId, StateChangeAttributeNames, PrimaryKeyOdbcDataType, PreparedStatement),
         updated_row_primary_key(QueryId, StateChangeType, Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue)
         ==>
-        odbc_execute_with_statistics(PreparedStatement, [PrimaryKeyValue], [PrimaryKeyOdbcDataType], Row),        
+        odbc_execute_with_statistics(PreparedStatement, [PrimaryKeyValue], [PrimaryKeyOdbcDataType], Row),
         updated_rows(QueryId,
                      StateChangeType,
                      post_state_change,
@@ -7125,10 +7133,10 @@ cleanup_post_state_change_select_statement @
 
 
 is_state_change_attribute(StateChangeType,    % +
-                          Schema,             % +                          
+                          Schema,             % +
                           TableName,          % +
                           AttributeName) :-   % +
-      
+
         once(( event_notification_table(Schema, TableName)
              ; StateChangeType == update,
                cql_history_attribute(Schema, TableName, AttributeName)
@@ -7172,22 +7180,22 @@ call_history_hook @
                            OdbcValueAfter)
         <=>
         debug(cql(history), '(1): ~w, ~w, ~w, ~w, ~w', [Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue, AttributeName]),
-        
+
         \+ memberchk(AttributeName, [PrimaryKeyAttributeName, inserted_, updated_, transaction_id_, generation_]),
-      
+
         debug(cql(history), '(2): ~w, ~w, ~w, ~w, ~w', [Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue, AttributeName]),
-        
+
         get_transaction_context(TransactionId, _, AccessToken, TransactionTimestamp, _),
-        thread_self(ThreadId),        
+        thread_self(ThreadId),
         database_transaction_query_info(ThreadId, UserId, UserIpAddress, Spid, Goal),
-      
+
         debug(cql(history), '(3): ~w, ~w, ~w, ~w, ~w', [Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue, AttributeName]),
-        
+
         odbc_value_to_application_value(Schema, TableName, AttributeName, OdbcValueBefore, ApplicationValueBefore),
         odbc_value_to_application_value(Schema, TableName, AttributeName, OdbcValueAfter, ApplicationValueAfter),
-      
+
         debug(cql(history), '(4): ~w, ~w, ~w, ~w, ~w', [Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue, AttributeName]),
-        
+
         ignore(catch(history_hook(Schema,
                                   TableName,
                                   AttributeName,
@@ -7206,7 +7214,7 @@ call_history_hook @
                                   Goal),
                      E,
                      cql_log([], error, 'Error in history hook: ~p', [E]))),
-      
+
         fail
         ;
         true.
@@ -7228,14 +7236,14 @@ history_hook(Schema,                      % +
              Spid,                        % +
              Connection,                  % +
              Goal) :-                     % +
-      
+
         % Need this because CHR rule call_history_hook is also called for attributes
         % identified in pql_event_notification_table/2.  We don't necessarily want these
         % turning up in history
         cql_history_attribute(Schema,
                               TableName,
                               AttributeName),
-      
+
         % Call the actual hook
         update_history(Schema,
                        TableName,
@@ -7267,12 +7275,12 @@ call_event_hook @
         updated_row_primary_key(QueryId, StateChangeType, Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue)
         <=>
         get_transaction_context(_, _, AccessToken, _, _),
-      
+
         save_database_event(AccessToken,
-                            StateChangeType,      % insert ; update ; delete      
+                            StateChangeType,      % insert ; update ; delete
                             Schema,
                             TableName,
-                            PrimaryKeyAttributeName, 
+                            PrimaryKeyAttributeName,
                             PrimaryKeyValue),
         fail
         ;
@@ -7320,7 +7328,7 @@ debug_before @
         dbms(Schema, DBMS),
         ( atom_codes(Sql, SqlCodes),
           sql_tokens(Tokens, SqlCodes, []),
-          sql_parse(action(Expression, _Types), _, [dbms(DBMS)], Tokens)->            
+          sql_parse(action(Expression, _Types), _, [dbms(DBMS)], Tokens)->
             ( ( Mode == full ;  Mode == minimal ;  DBMS == 'PostgreSQL')-> % Postgresql does not support the DECLARE .... stuff, so just print it out using full mode
                 findall(Binding,
                         ( member(odbc_parameter(_, _, _, Binding, Disposition, _), Parameters),
@@ -7353,16 +7361,16 @@ debug_before @
                     HSql = '<could not parse>'
                 )
             )->
-            true 
+            true
         ; otherwise->
             HSql = '<could not parse>'
         ),
 
         HBindings = [],
-        
+
         thread_self(ThreadId),
         port_label(call, PortName, Colour),
-        
+
         ( Mode == full ->
             format(atom(HumanSql), HSql, HBindings),
             ansi_format([], '[~w]  ~|', [ThreadId]),
@@ -7390,7 +7398,7 @@ declaration_sql(Schema, TableName, AttributeName, Binding, I, Declaration, Assig
         format(atom(Assignment), 'SET ~w = ~C', [ParameterName, Binding]),
         Parameter = parameter(ParameterName).
 
-    
+
 debug_after @
         show_debug(Mode),
         debug_statistics(C1, T1, I1),
@@ -7412,24 +7420,24 @@ debug_after @
                 ansi_format([], '[~w]  ~|', [ThreadId]),
                 ansi_format([fg(Colour), bold], '~w', [PortName]),
                 ansi_format([], '~w', [HumanSql]),
-                ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                
+                ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
 
             ; otherwise ->
                 ( Mode == minimal ->
                     ansi_format([], '[~w]  ~|', [ThreadId]),
                     ansi_format([fg(Colour), bold], '~w', [PortName]),
                     ansi_format([], '~w', [HumanSql]),
-                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                                    
+                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
                 ; Outputs = affected(N)->
                     ansi_format([], '[~w]  ~|', [ThreadId]),
                     ansi_format([fg(Colour), bold], 'Number of rows affected: ', []),
                     ansi_format([], '~w~n', [N]),
-                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                                    
+                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
                 ; Outputs = identity(N)->
                     ansi_format([], '[~w]  ~|', [ThreadId]),
                     ansi_format([fg(Colour), bold], 'Identity of inserted row: ', []),
                     ansi_format([], '~w~n', [N]),
-                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])                                    
+                    ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
                 ; otherwise ->
                     selection_results(Outputs, Results),
                     atomic_list_concat(Results, '\n        ', Debug),
@@ -7439,7 +7447,7 @@ debug_after @
                     ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
                 )
             )
-        
+
         ; Port == fail ->
             ( Mode == minimal ->
                 ansi_format([], '[~w]  ~|', [ThreadId]),
@@ -7447,7 +7455,7 @@ debug_after @
                 ansi_format([], '~w', [HumanSql])
             ; otherwise ->
                 ansi_format([], '[~w]  ~|', [ThreadId]),
-                ansi_format([fg(Colour), bold], '~w', [PortName])                
+                ansi_format([fg(Colour), bold], '~w', [PortName])
             ),
             ansi_format([], ' (~6fs, ~2fcpu, ~D inferences)~n', [ElapsedTime, CpuTime, Inferences])
 
@@ -7627,13 +7635,13 @@ cn05 @
         runtime_constraints(Constraints)
         <=>
         runtime_constraints((cql_pre_state_change_select_sql(A, B, C, D, E, F, G), Constraints)).
-  
+
 cn06 @
         cql_post_state_change_select_sql(A, B, C, D),
         runtime_constraints(Constraints)
         <=>
         runtime_constraints((cql_post_state_change_select_sql(A, B, C, D), Constraints)).
-  
+
 cn07 @
         row_count(A, B),
         runtime_constraints(Constraints)
@@ -7767,7 +7775,7 @@ get_referenced_tables @
 % impossible. According to http://msdn.microsoft.com/en-us/library/ms187746.aspx:
 %   * The default precision is 18
 %   * The default scale is 0
-max_decimal(decimal(18, 0)). 
+max_decimal(decimal(18, 0)).
 
 
 %!      on_to_where(+Schema, +On, -Where)
@@ -7895,7 +7903,7 @@ fully_compile_list([Condition:List|More], Sql):-
         % Note that this will instantiate condition if unbound. This likely indicates a mistake: If the list is not bound at runtime,
         % the developer has forgotten something. list(X) is instantiated with X = [], ie the restriction is ignored if unbound.
         % Note that the CQL decompiler tester can get into this situation, because it does not /execute/ the CQL, just tries to parse the generated
-        % output. 
+        % output.
         !,
         ( skip_cql_instantiation_check->
             instantiate_test_values(Condition)
@@ -8073,7 +8081,7 @@ user:term_expansion(:-cql_option(max_db_connections(N)), cql_database:max_db_con
 
 %%      statistic_monitored_attribute(+Schema, +TableName, +ColumnName).
 :-multifile(cql_statistic_monitored_attribute_hook/3).
-statistic_monitored_attribute(Schema, TableName, ColumnName):-        
+statistic_monitored_attribute(Schema, TableName, ColumnName):-
         cql_statistic_monitored_attribute_hook(Schema, TableName, ColumnName).
 
 %%      statistic_monitored_attribute_change(+Schema, +TableName, +ColumnName, +Value, +Delta).
@@ -8176,7 +8184,7 @@ database_key(Schema, EntityName, ConstraintName, KeyColumnNames, 'primary key') 
 
 database_key(Schema, EntityName, ConstraintName, KeyColumnNames, unique) :-
         database_constraint(Schema, EntityName, ConstraintName, unique(KeyColumnNames)).
-        
+
 database_key(Schema, EntityName, identity, [ColumnName], identity) :-
         database_identity(Schema, EntityName, ColumnName).
 
@@ -8207,7 +8215,7 @@ cql_data_type(Schema,                                          % +
                            Nullability,
                            _,    % IsIdentity
                            _).
-        
+
 cached_data_type(Schema, EntityName, ColumnName, DatabaseDataType, MaximumLength, NumericPrecision, NumericScale, Domain, _, boolean(AllowsNullsTrueFalse), boolean(IsIdentityTrueFalse), ColumnDefault) :-
         database_attribute(_, Schema, EntityName, ColumnName, domain(Domain), allows_nulls(AllowsNullsTrueFalse), is_identity(IsIdentityTrueFalse), ColumnDefault),
         checked_domain(Domain, _, _, _, _, _, DataType),

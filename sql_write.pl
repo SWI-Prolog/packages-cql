@@ -28,12 +28,12 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 
-    PostgreSQL is a trademark of the PostgreSQL Global Development Group. 
+    PostgreSQL is a trademark of the PostgreSQL Global Development Group.
     Microsoft, SQL Server, and Windows are either registered trademarks or
     trademarks of Microsoft Corporation in the United States and/or other
-    countries. 
+    countries.
     SQLite is a registered trademark of Hipp, Wyrick & Company, Inc in the United
-    States. 
+    States.
     All other trademarks or registered trademarks are the property of their
     respective owners.
 
@@ -87,7 +87,7 @@ sql_emit_token(Format, Args, _Class, _Options, sql_stream(Tokens, [Token|NewTail
             once(append(_, [LastLine], Lines)), % Apparently this is nondet!
             atom_length(LastLine, NewIndent)
         ).
-            
+
 sql_append_raw_token(Token, sql_stream(Tokens, [Token|NewTail], Class,Indent), sql_stream(Tokens, NewTail, Class, Indent)).
 
 tab_stop(Stop, sql_stream(Tokens, Tail, Class, Indent), sql_stream(Tokens, Tail, Class, Indent)):-
@@ -135,7 +135,7 @@ sql_write_term(view_definition(Name, Columns, Expression, With), Indent, Options
         ),
         sql_emit_token(' AS~n', [], keyword, Options),
         sql_write_term(Expression, Indent, Options).
-        
+
 sql_write_term(parameter(I), _Indent, Options)--> !,
         ( {memberchk(parameter_bindings(Bindings), Options)}->
             {nth0(I, Bindings, Value)},
@@ -152,7 +152,7 @@ sql_write_term(table(Name), Indent, Options)--> !,
            strip_sql_comments(Name, identifier(_,RawName))}->
             {format(atom(Token), '<a href="/sql_explorer/~w">', [RawName])},
             sql_append_raw_token(Token),
-            sql_write_term(Name, Indent, Options),        
+            sql_write_term(Name, Indent, Options),
             sql_append_raw_token('</a>')
         ; {otherwise}->
             sql_write_term(Name, Indent, Options)
@@ -224,7 +224,7 @@ sql_write_term(set_function(Functor, Quantifier, Arg), Indent, Options)--> !,
             {upcase_atom(Functor, FunctorUC)},
             sql_write_term(FunctorUC, Indent, Options)
         ),
-        sql_emit_token('(', [], punctuation, Options),                    
+        sql_emit_token('(', [], punctuation, Options),
         sql_write_term(Quantifier, Indent, Options),
         sql_write_term(Arg, Indent, Options),
         sql_emit_token(')', [], punctuation, Options).
@@ -293,7 +293,7 @@ sql_write_term(select(Quantifier, Selections, Source, Limit, {no_for}), Indent, 
             sql_write_term(Limit, Indent, Options)
         ; {otherwise}->
             {true}
-        ),           
+        ),
         sql_write_term(Source, Indent, Options),
         ( {memberchk(dbms('PostgreSQL'), Options),
            Limit \== {no_limit}}->
@@ -315,7 +315,7 @@ sql_write_term(column(Name, Type, AllowsNulls, IsIdentity, _Default), Indent, Op
         ; {Type = domain(Domain)} ->
             {format(atom(Token), '<a href="/sql_explorer/~w">', [Domain])},
             sql_append_raw_token(Token),
-            sql_write_term(Type, Indent, Options),        
+            sql_write_term(Type, Indent, Options),
             sql_append_raw_token('</a>')
         ; {otherwise}->
             sql_write_term(Type, Indent, Options)
@@ -352,7 +352,7 @@ sql_write_term(select(Quantifier, Selections, Source, Limit, For), Indent, Optio
         sql_emit_token(')', [], punctuation, Options),
         sql_emit_token(', ', [], comma, Options),
         sql_write_term(Separator, Indent, Options),
-        sql_emit_token(')', [], punctuation, Options).       
+        sql_emit_token(')', [], punctuation, Options).
 
 sql_write_term(select(Quantifier, Selections, Source, Limit, For), Indent, Options)-->
         {memberchk(dbms('Microsoft SQL Server'), Options),
@@ -362,7 +362,7 @@ sql_write_term(select(Quantifier, Selections, Source, Limit, For), Indent, Optio
         sql_emit_token('FOR XML PATH', [], keyword, Options),
         sql_emit_token('(', [], punctuation, Options),
         sql_write_term(Separator, Indent, Options),
-        sql_emit_token(')', [], punctuation, Options).       
+        sql_emit_token(')', [], punctuation, Options).
 
 sql_write_term(routine(Name, Args), Indent, Options)--> !,
         sql_write_term(Name, Indent, Options),
@@ -405,7 +405,7 @@ sql_write_term(column(Qualifier, Name), Indent, Options)--> !,
         ; {otherwise}->
             sql_write_term(Qualifier, Indent, Options),
             sql_emit_token('.', [], punctuation, Options)
-        ),        
+        ),
         sql_write_and_strip_comments(Name, Indent, Options, StrippedName, Comments),
         ( {reserved_sql_keyword(StrippedName)}->
             ( {memberchk(dbms('PostgreSQL'), Options)}->
@@ -430,7 +430,7 @@ sql_write_term(group_expression(Expression, Collation), Indent, Options)--> !,
             sql_emit_token(' COLLATE ', [], keyword, Options),
             sql_write_term(Collation, Indent, Options)
         ).
-        
+
 
 sql_write_term(group_column(Name, Collation), Indent, Options)--> !,
         sql_write_term(Name, Indent, Options),
@@ -440,7 +440,7 @@ sql_write_term(group_column(Name, Collation), Indent, Options)--> !,
             sql_emit_token(' COLLATE ', [], keyword, Options),
             sql_write_term(Collation, Indent, Options)
         ).
-        
+
 
 sql_write_term(derived_column(Column, Alias), Indent, Options)--> !,
         ( {Alias \== {no_alias}}->
@@ -490,7 +490,7 @@ sql_write_term(qualified_join(Type, RHS, On), Indent, Options)--> !,
         tab_stop(NewIndent),
         sql_emit_token('   ', [], punctuation, Options),
         sql_write_term(Type, Indent, Options),
-        sql_emit_token('~n~w', [NewIndent], punctuation, Options),        
+        sql_emit_token('~n~w', [NewIndent], punctuation, Options),
         sql_write_term(RHS, Indent, Options),
         sql_write_term(On, Indent, Options).
 
@@ -559,13 +559,13 @@ sql_write_term(comparison(Op, LHS, RHS), Indent, Options)--> !,
 sql_write_term(element(A), Indent, Options)--> !,
         sql_write_term(A, Indent, Options).
 
-sql_write_term(and(A, B), Indent, Options)--> 
+sql_write_term(and(A, B), Indent, Options)-->
         {memberchk(suppress_collations, Options)},
         {should_suppress_collation(A)},
         !,
         sql_write_term(B, Indent, Options).
 
-sql_write_term(and(A, B), Indent, Options)--> 
+sql_write_term(and(A, B), Indent, Options)-->
         {memberchk(suppress_trivial_conditions, Options)},
         {should_suppress_condition(B)},
         !,
@@ -639,7 +639,7 @@ sql_write_term(float(X), Indent, Options)--> !,
         sql_write_term(X, Indent, Options),
         sql_emit_token(')', [], punctuation, Options).
 
-sql_write_term(username(X), Indent, Options)--> !, % TBD: Force normalization        
+sql_write_term(username(X), Indent, Options)--> !, % TBD: Force normalization
         sql_emit_token('USERNAME', [], function, Options),
         sql_emit_token('(', [], punctuation, Options),
         sql_write_term(X, Indent, Options),
@@ -706,7 +706,7 @@ sql_write_term(str(X), Indent, Options)--> !,
         sql_write_term(X, Indent, Options),
         sql_emit_token(')', [], punctuation, Options).
 
-sql_write_term(concatenate(A,B), Indent, Options)--> !, 
+sql_write_term(concatenate(A,B), Indent, Options)--> !,
         sql_write_term(A, Indent, Options),
         ( {memberchk(dbms('Microsoft SQL Server'), Options)}->
             sql_emit_token(' + ', [], punctuation, Options)
@@ -836,7 +836,7 @@ sql_write_term(dateadd(A,B,C), Indent, Options)-->
         sql_emit_token('interval', [], function, Options),
         sql_emit_token(')', [], punctuation, Options),
         sql_end_comments(Comments, Indent, Options).
-        
+
 sql_write_term(dateadd(A,B,C), Indent, Options)--> !, % TBD: Force normalization
         sql_emit_token('DATEADD', [], function, Options),
         sql_emit_token('(', [], punctuation, Options),
@@ -849,7 +849,7 @@ sql_write_term(dateadd(A,B,C), Indent, Options)--> !, % TBD: Force normalization
 
 sql_write_term(datepart(A,B), Indent, Options)-->
         ( {memberchk(dbms('PostgreSQL'), Options) ; memberchk(normalize, Options)}),
-        !,        
+        !,
         sql_emit_token('EXTRACT', [], function, Options),
         sql_emit_token('(', [], punctuation, Options),
         sql_emit_token('\'', [], literal, Options),
@@ -926,7 +926,7 @@ sql_write_term(datediff(A,B,C), Indent, Options)-->
             sql_write_date(C, Indent, Options),
             sql_emit_token(' - ', [], punctuation, Options),
             sql_write_date(B, Indent, Options),
-            sql_emit_token(')', [], punctuation, Options),     
+            sql_emit_token(')', [], punctuation, Options),
             sql_emit_token(' / ', [], punctuation, Options),
             sql_emit_token('7', [], literal, Options),
             sql_emit_token(')', [], punctuation, Options)
@@ -1050,7 +1050,7 @@ sql_write_term(substring(A,B,C), Indent, Options)--> !,
 
 sql_write_term(charindex(ExpressionToFind, ExpressionToSearch, StartLocation), Indent, Options)-->
         ( {memberchk(dbms('PostgreSQL'), Options) ; memberchk(normalize, Options)}),
-        !,        
+        !,
         ( {strip_sql_comments(StartLocation, {no_start})}->
             sql_emit_token('POSITION', [], function, Options),
             sql_emit_token('(', [], punctuation, Options),
@@ -1100,7 +1100,7 @@ sql_write_term(precision_cast(A,B,C), Indent, Options)--> !,
                 sql_write_term(C, Indent, Options)
             ),
             sql_emit_token(')', [], punctuation, Options)
-        ; {otherwise}->            
+        ; {otherwise}->
             ( {C == {no_precision}} ->
                 sql_emit_token('CAST', [], function, Options),
                 sql_emit_token('(', [], punctuation, Options),
@@ -1112,12 +1112,12 @@ sql_write_term(precision_cast(A,B,C), Indent, Options)--> !,
                 sql_emit_token('CAST', [], function, Options),
                 sql_emit_token('(', [], punctuation, Options),
                 sql_write_term(B, Indent, Options),
-                sql_emit_token(' AS ', [], keyword, Options),                
+                sql_emit_token(' AS ', [], keyword, Options),
                 sql_emit_token('VARCHAR', [], keyword, Options),
                 sql_emit_token('(', [], punctuation, Options),
                 sql_write_term(C, Indent, Options),
                 sql_emit_token(')', [], punctuation, Options)
-            ; {otherwise}->                
+            ; {otherwise}->
                 {throw(unnormalizable(precision_cast(A,C)))}
             ),
             sql_emit_token(')', [], punctuation, Options)
@@ -1166,7 +1166,7 @@ sql_write_term({default_values}, _Indent, Options)--> !,
 
 sql_write_term(source(From, Where, GroupBy, OrderBy, Having), Indent, Options)--> !,
         sql_write_term(From, Indent, Options),
-        sql_write_term(Where, Indent, Options),        
+        sql_write_term(Where, Indent, Options),
         sql_write_term(GroupBy, Indent, Options),
         ( {memberchk(dbms('PostgreSQL'), Options)}->
             sql_write_term(Having, Indent, Options),
@@ -1216,7 +1216,7 @@ sql_write_term(isnull(A, B), Indent, Options)--> !,
 sql_write_term(negative(A), Indent, Options)--> !,
         sql_emit_token('-', [], punctuation, Options), % WARNING: Order of operations
         sql_write_term(A, Indent, Options).
-          
+
 sql_write_term(abs(A), Indent, Options)--> !,
         sql_emit_token('ABS', [], function, Options),
         sql_emit_token('(', [], punctuation, Options),
@@ -1261,13 +1261,13 @@ sql_write_term(when(searched(S), R), Indent, Options)--> !,
         sql_write_term(S, Indent, Options),
         sql_emit_token('~n~w  THEN ', [Indent], keyword, Options),
         sql_write_term(R, Indent, Options).
-        
+
 sql_write_term(when(Match, R), Indent, Options)--> !,
         sql_emit_token('WHEN ', [], keyword, Options),
         sql_write_term(Match, Indent, Options),
         sql_emit_token('~n~w  THEN ', [Indent], keyword, Options),
         sql_write_term(R, Indent, Options).
-        
+
 sql_write_term(having(Having), Indent, Options)--> !,
         sql_emit_token('~n~w', [Indent], punctuation, Options),
         sql_emit_token('HAVING ', [], keyword, Options),
@@ -1306,7 +1306,7 @@ sql_write_term(collated_factor(F, C), Indent, Options)-->
         sql_write_term(F, Indent, Options),
         sql_write_and_strip_comments(C, Indent, Options, _Collation, Comments),
         sql_end_comments(Comments, Indent, Options).
-        % TBD: All collations for 'PostgreSQL' are just ignored. 
+        % TBD: All collations for 'PostgreSQL' are just ignored.
         %sql_write_term(Collation, Indent, Options).
 
 
@@ -1314,7 +1314,7 @@ sql_write_term(collated_factor(F, C), Indent, Options)-->!,
         sql_write_term(F, Indent, Options),
         sql_emit_token(' COLLATE ', [], keyword, Options),
         sql_write_term(C, Indent, Options).
-        
+
 sql_write_term(sort_column(C), Indent, Options)--> !,
         sql_write_term(C, Indent, Options).
 sql_write_term(index(I), Indent, Options)--> !, % Should we normalize this?
@@ -1343,7 +1343,7 @@ sql_write_term(sort_key(Key, Collate, Order), Indent, Options)--> !,
 
 sql_write_term(desc, _, Options)-->!, sql_emit_token(' DESC ', [], keyword, Options).
 sql_write_term(asc, _, Options)-->!, sql_emit_token(' ASC ', [], keyword, Options).
-            
+
 sql_write_term(search(S), Indent, Options)--> !,
         sql_write_term(S, Indent, Options).
 
@@ -1385,7 +1385,7 @@ sql_write_term(full, _, Options)--> !, sql_emit_token('FULL', [], operator, Opti
 sql_write_term(is_not_null(X), Indent, Options)--> !,
         sql_write_term(X, Indent, Options),
         sql_emit_token(' IS NOT NULL', [], operator, Options).
-        
+
 sql_write_term(is_null(X), Indent, Options)--> !,
         sql_write_term(X, Indent, Options),
         sql_emit_token(' IS NULL', [], operator, Options).
@@ -1403,7 +1403,7 @@ sql_write_term(union(LHS, RHS, Corresponding), Indent, Options)--> !,
                 sql_emit_token('    ', [], punctuation, Options),
                 sql_write_term(RHS, S, Options)
             )
-        ; {otherwise}->               
+        ; {otherwise}->
             tab_stop(S),
             sql_write_term(LHS, Indent, Options),
             sql_emit_token('~n~w  UNION~n~w', [S, S], keyword, Options),
@@ -1464,7 +1464,7 @@ sql_write_term({null}, _Indent, Options)--> !,
 sql_write_term(join, _Indent, Options)--> !,
         sql_emit_token('JOIN', [], keyword, Options).
 
-sql_write_term(Atom, _Indent, Options)--> 
+sql_write_term(Atom, _Indent, Options)-->
         {atomic(Atom)}, !,
         sql_emit_token('~w', [Atom], unknown, Options).
 
@@ -1486,7 +1486,7 @@ sql_write_list_compact([Head|Tail], Indent, Options)--> !,
         sql_write_term(Head, Indent, Options),
         sql_emit_token(', ', [], comma, Options),
         sql_write_list_compact(Tail, Indent, Options).
-        
+
 sql_write_list_with_newlines(Comments:List, Indent, Options)--> !,
         sql_write_comments(Comments, Indent, Options),
         sql_write_list_with_newlines(List, Indent, Options),
@@ -1494,7 +1494,7 @@ sql_write_list_with_newlines(Comments:List, Indent, Options)--> !,
 
 sql_write_list_with_newlines(List, _ExistingIndent, Options)-->
         tab_stop(S),
-        sql_write_list_with_newlines_1(List, S, Options).        
+        sql_write_list_with_newlines_1(List, S, Options).
 
 sql_write_list_with_newlines_1(Comments:List, Indent, Options)--> !,
         sql_write_comments(Comments, Indent, Options),
@@ -1516,7 +1516,7 @@ sql_write_list_with_newlines_and_no_commas(Comments:List, Indent, Options)--> !,
 
 sql_write_list_with_newlines_and_no_commas(List, _ExistingIndent, Options)-->
         tab_stop(S),
-        sql_write_list_with_newlines_and_no_commas_1(List, S, Options).        
+        sql_write_list_with_newlines_and_no_commas_1(List, S, Options).
 
 sql_write_list_with_newlines_and_no_commas_1(Comments:List, Indent, Options)--> !,
         sql_write_comments(Comments, Indent, Options),
@@ -1537,7 +1537,7 @@ sql_write_and_strip_comments(Comments:Term, Indent, Options, X, [Comments|Y])-->
         sql_write_and_strip_comments(Term, Indent, Options, X, Y).
 
 sql_write_and_strip_comments(Term, _Indent, _Options, Term, [])--> [].
-        
+
 
 sql_write_comments(meta(Comments, Errors), Indent, Options)--> !,
         ( {Errors == {null}} ->
@@ -1610,7 +1610,7 @@ sql_end_comment(meta(_, Errors), _Indent, Options)--> !,
         ; {otherwise}->
             {true}
         ).
-        
+
 
 sql_write_type(Comments:Type, Indent, Options)--> !,
         sql_write_comments(Comments, Indent, Options),
@@ -1618,13 +1618,13 @@ sql_write_type(Comments:Type, Indent, Options)--> !,
         sql_end_comment(Comments, Indent, Options).
 
 sql_write_type(varchar(L), Indent, Options)--> !,
-        ( {L == {unknown}} ->            
+        ( {L == {unknown}} ->
             sql_emit_token('VARCHAR', [], keyword, Options)
         ; {otherwise}->
             sql_emit_token('VARCHAR', [], keyword, Options),
             sql_emit_token('(', [], punctuation, Options),
             sql_write_term(L, Indent, Options),
-            sql_emit_token(')', [], punctuation, Options)        
+            sql_emit_token(')', [], punctuation, Options)
         ).
 
 sql_write_type(int, _Indent, Options)--> !,

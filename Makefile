@@ -30,7 +30,7 @@ rpm-install:	install
 pdf-install:
 		$(INSTALL_DATA) $(DOC).pdf $(DESTDIR)$(PKGDOCDIR)
 
-html-install:	
+html-install:
 		$(INSTALL_DATA) $(DOC).html $(DOCIMG) $(DESTDIR)$(PKGDOCDIR)
 
 uninstall:

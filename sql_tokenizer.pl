@@ -28,12 +28,12 @@
     invalidate any other reasons why the executable file might be covered by
     the GNU General Public License.
 
-    PostgreSQL is a trademark of the PostgreSQL Global Development Group. 
+    PostgreSQL is a trademark of the PostgreSQL Global Development Group.
     Microsoft, SQL Server, and Windows are either registered trademarks or
     trademarks of Microsoft Corporation in the United States and/or other
-    countries. 
+    countries.
     SQLite is a registered trademark of Hipp, Wyrick & Company, Inc in the United
-    States. 
+    States.
     All other trademarks or registered trademarks are the property of their
     respective owners.
 
@@ -190,7 +190,7 @@ sql_token(literal(Literal, Type))-->
             Type = decimal(P, P)
          ; otherwise->
             nth1(P, Codes, 0'.), %'
-            
+
             length(Codes, L),
             S is L - P,
             PP is P + S,
