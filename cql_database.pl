@@ -98,6 +98,7 @@ get_transaction_context(TransactionId, TrxId, AccessToken, TransactionTimestamp,
         odbc_connection_in_use/1.
 
 :-multifile(cql_max_db_connections_hook/1).
+:-multifile(cql:odbc_connection_complete_hook/3).
 odbc_connection_call(Schema, Connection, Goal) :-
         ( retract(odbc_connection_available(Schema, Connection)) ->                       % Get a connection from the pool
             assert(odbc_connection_in_use(Schema)),
@@ -140,17 +141,7 @@ odbc_connection_call(Schema, Connection, Goal) :-
             thread_at_exit(odbc_cleanup_and_disconnect(Connection)),
             assert(odbc_connection_available(Schema, Connection)),
 
-            odbc_get_connection(Connection, dbms_name(DBMS)),
-
-            ( DBMS == 'Microsoft SQL Server',
-              odbc_query(Connection, 'select @@SPID', row(SPID)) ->
-                true
-
-            ; otherwise ->
-                SPID = {null}
-            ),
-            thread_self(ThreadId),
-            assert(sql_server_spid(Connection, SPID, Schema, ThreadId)),
+            ignore(cql:odbc_connection_complete_hook(Schema, ConnectionDetails, Connection)),
             odbc_connection_call(Schema, Connection, Goal)
 
         ; otherwise ->

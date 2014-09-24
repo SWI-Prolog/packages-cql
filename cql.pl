@@ -1427,7 +1427,8 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
 cql_runtime(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber) :-
         catch(cql_runtime_1(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber),
               format(Format, Arguments),  % Want a backtrace for compile errors in compile_at_runtime statements at runtime
-              throw_exception(cql, Format, Arguments)).
+              ( format(atom(Message), Format, Arguments),
+                throw(cql_error(Message)))).
 
 
 cql_runtime_1(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber) :-
@@ -5498,7 +5499,8 @@ identity_sql_server @
             cql_access_token_to_user_id(AccessToken, UserId),
             cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
-            throw_exception(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity])
+            format(atom(Message), 'Integer identity value expected but got ~q', [ScopeIdentity]),
+            throw(cql_error(bad_identity, Message))
         ).
 
 identity_sqlite @
@@ -5516,7 +5518,8 @@ identity_sqlite @
             cql_access_token_to_user_id(AccessToken, UserId),
             cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
-            throw_exception(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity])
+            format(atom(Message), 'Integer identity value expected but got ~q', [ScopeIdentity]),
+            throw(cql_error(bad_identity, Message))
         ).
 
 rows_affected @
@@ -6231,7 +6234,6 @@ odbc_data_types_and_inputs(OdbcParameters, OdbcDataTypes, OdbcInputs) :-
             TransactionId = {null},
             TransactionTimestamp = {null}
         ),
-        writeln(odbc_data_types_and_inputs_1(OdbcParameters, UserId, TransactionId, TransactionTimestamp, OdbcDataTypes, OdbcInputs)),
         odbc_data_types_and_inputs_1(OdbcParameters,
                                      UserId,
                                      TransactionId,
@@ -6387,9 +6389,8 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
 
         ; otherwise ->
             % Definitely a runtime exception (so use throw_exception to get full backtrace)
-            throw_exception(application_value_unmappable,
-                            'The value /~w/ being written to ~w.~w.~w cannot be mapped to a term compatible with the ODBC interface',
-                            [ApplicationValue, Schema, TableName, AttributeName])
+            format(atom(Message), 'The value /~w/ being written to ~w.~w.~w cannot be mapped to a term compatible with the ODBC interface', [ApplicationValue, Schema, TableName, AttributeName]),
+            throw(cql_error(application_value_unmappable, Message))
         ).
 
 
@@ -6474,7 +6475,8 @@ determine_update_table_key @
         ; database_identity(Schema, TableName, InvolvedColumn)->
             InvolvedColumns = [InvolvedColumn]
         ; otherwise->
-            throw_exception(cannot_join, 'Table ~w does not contain any keys. To do a LEFT OUTER JOIN in an update in PostgreSQL, you must add a key to the table you are trying to update', [TableName])
+            format(atom(Message), 'Table ~w does not contain any keys. To do a LEFT OUTER JOIN in an update in PostgreSQL, you must add a key to the table you are trying to update', [TableName]),
+            throw(cql_error(cannot_join, Message))
         ),
         findall(InvolvedColumn-_, member(InvolvedColumn, InvolvedColumns), Key).
 
@@ -7982,7 +7984,7 @@ check_compile_condition(Condition):-
         ; Condition == compile ->
             true
         ; otherwise->
-            throw_exception(bad_cql_compile_instruction, '~w', [Condition])
+            throw(cql_error(bad_cql_compile_instruction, Condition))
         ).
 
 
@@ -8324,20 +8326,12 @@ domain_allowed_value(Domain, Value):-
 % FIXME: Clean up everything below this line
 
 cql_perf_time(T):- get_time(T). % This needs to do something else for Windows because get_time/1 has insufficient granularity. Jan suggests a windows_perf_counter/1 predicate
-throw_exception(ErrorId, Format, Args):-
-        format(atom(Message), Format, Args),
-        throw(cql_error(ErrorId, Message)).
-throw_exception(ErrorId, Message):-
-        throw(cql_error(ErrorId, Message)).
-
-
-
 
 % Tests to add:
 % Can I do anything about the ugly compile: list of attributes in sqlite?
 % Sqlite seems to handle longvarchar and varchar(max) and text as different types to varchar(N). The type conversion fails and we end up inserting NULLs
 
-
+/*
 ??(Goal):-
         setup_call_catcher_cleanup(format('CALL  ~q~n', [Goal]),
                                    Goal,
@@ -8356,6 +8350,7 @@ throw_exception(ErrorId, Message):-
         ; otherwise->
             true
         ).
+*/
 
 %%      cql_normalize_name(+DBMS, +Name, -NormalizedName).
 %       Normalize a name which is potentially longer than the DBMS allows to a unique truncation
