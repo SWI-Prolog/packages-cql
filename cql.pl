@@ -2081,8 +2081,8 @@ store_attribute_bindings_1(Schema, QueryId, TableAlias, [AttributeNameValuePair|
           callable(CompileTimeGoal),
           functor(CompileTimeGoal, PredicateName, ArityMinusOne),
           Arity is ArityMinusOne + 1,
-          current_predicate(PredicateName/Arity),
-          call(CompileTimeGoal, ApplicationValue) ->
+          current_predicate(user:PredicateName/Arity),
+          user:call(CompileTimeGoal, ApplicationValue) ->
             attribute_binding(QueryId, attribute(Schema, TableAlias, AttributeName), ApplicationValue)
         ),
         store_attribute_bindings_1(Schema, QueryId, TableAlias, AttributeNameValuePairs).
@@ -4150,6 +4150,8 @@ resolve_join_points_4 @
         ; (B==A) == (JoinVariableA==JoinVariableB)
         )
         |
+        not_a_singleton(JoinVariableA),
+        not_a_singleton(JoinVariableB),
         join_variable(JoinVariableA),
         join_variable(JoinVariableB),
         NewOn = (TableAliasLhs-AttributeNameLhs==TableAliasRhs-AttributeNameRhs).
@@ -4164,6 +4166,7 @@ resolve_join_points_5 @
         On =.. [Operator, V, Rhs],
         JoinVariable == V
         |
+        not_a_singleton(JoinVariable),
         join_variable(JoinVariable),
         NewOn =.. [Operator, TableAlias-JoinVariable, Rhs].
 
@@ -4177,6 +4180,7 @@ resolve_join_points_6 @
         On =.. [Operator, Lhs, V],
         JoinVariable == V
         |
+        not_a_singleton(JoinVariable),
         join_variable(JoinVariable),
         NewOn =.. [Operator, Lhs, TableAlias-JoinVariable].
 
@@ -4875,6 +4879,7 @@ write_having_comparison_between_aggregation_and_null @
         \
         write_restriction(QueryId, CompileInstruction, RestrictionType, Variable, Operator, {null})
         <=>
+        not_a_singleton(Variable),
         null_comparison_keywords(Operator, Keywords, Tail),
         functor(Aggregation, Functor, 1),
         aggregation_operator(Functor),
@@ -4888,6 +4893,7 @@ write_having_comparison_between_null_and_aggregation @
         \
         write_restriction(QueryId, CompileInstruction, RestrictionType, {null}, Operator, Variable)
         <=>
+        not_a_singleton(Variable),
         null_comparison_keywords(Operator, Keywords, Tail),
         functor(Aggregation, Functor, 1),
         aggregation_operator(Functor),
@@ -4901,6 +4907,7 @@ write_having_comparison_between_aggregation_and_expression @
         \
         write_restriction(QueryId, CompileInstruction, RestrictionType, Variable, Operator, Expression)
         <=>
+        not_a_singleton(Variable),
         functor(Aggregation, Functor, 1),
         aggregation_operator(Functor),
         arg(1, Aggregation, AttributeName),
