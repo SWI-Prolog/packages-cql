@@ -483,6 +483,7 @@ odbc_numeric_precision_limit(27).
 :-multifile(cql:odbc_value_to_application_value_hook/7).
 odbc_value_to_application_value(Schema, TableSpec, ColumnName, OdbcValue, ApplicationValue):-
         cql_data_type(Schema, TableSpec, ColumnName, DatabaseDataType, _, _, _, Domain, _, _),
+        !,
         ( cql:odbc_value_to_application_value_hook(DatabaseDataType, Schema, TableSpec, ColumnName, Domain, OdbcValue, ApplicationValue)->
             true
         ; otherwise->
