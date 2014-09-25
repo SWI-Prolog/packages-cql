@@ -68,9 +68,13 @@
           default_schema/1,
           odbc_execute_with_statistics/4,
           cql_access_token_to_user_id/2,
-          dbms/2,
+          dbms/2,          
           odbc_data_type/4,
+          attribute_domain/4,
+          database_identity/3,
+          database_key/5,
           primary_key_column_name/3,
+          statistic_monitored_attribute/3,
           domain_database_data_type/2,
           database_attribute/8,
           database_domain/2,
@@ -7829,10 +7833,10 @@ attribute @
 %!      cql_suggest_indices(+RestrictionTree, +QueryId) is det.
 %
 %       Warn of any restrictions without corresponding indexes on the query identified by QueryId.
-:-multifile(suggest_indices/1).
+:-multifile(cql_index_suggestion_hook/1).
 cql_suggest_indices(RestrictionTree, QueryId) :-
         phrase(conjunction(RestrictionTree, QueryId), Conjunction),   % Each solution is a different conjunction
-        ignore(suggest_indices(Conjunction)).
+        ignore(cql_index_suggestion_hook(Conjunction)).
 
 conjunction(or(LHS, RHS), QueryId) -->
         !,
@@ -8125,7 +8129,7 @@ statistic_monitored_attribute_change(Schema, TableName, ColumnName, Value, Delta
 %          * unique(ColumnNames:list)
 %          * check(CheckClause)
 %       In theory this can be autoconfigured too, but I have not written the code for it yet
-:-multifile(database_constraint/4).
+:-multifile(cql:database_constraint/4).
 
 user:goal_expansion(Schema:{Cql}, GoalExpansion) :-
         atom(Schema),
@@ -8165,7 +8169,9 @@ cql_log(Targets, Level, Format, Args):-
 
 %%      attribute_domain(+Schema, +TableName, +ColumnName, -Domain).
 attribute_domain(Schema, TableName, ColumnName, Domain):-
-        odbc_data_type(Schema, TableName, ColumnName, Domain).
+        %odbc_data_type(Schema, TableName, ColumnName, Domain).
+        % CHECKME: Above or below?
+        database_attribute(_, Schema, TableName, ColumnName, domain(Domain), _, _, _).
 
 %%      database_identity(?Schema:atom, ?EntityName:atom, ?ColumnName:atom)
 database_identity(Schema, EntityName, ColumnName) :-
