@@ -116,7 +116,8 @@ odbc_connection_call(Schema, Connection, Goal) :-
           ),
           N >= MaxDbConnections ->
             thread_self(ThreadId),
-            throw(too_many_schema_connections(MaxDbConnections, ThreadId))
+            
+            cql_error(too_many_schema_connections, 'Too many connections on ~w: Maximum is ~w', [ThreadId, MaxDbConnections])
 
         ; database_connection_details(Schema, ConnectionDetails) ->
             ( ConnectionDetails = driver_string(DriverString) ->

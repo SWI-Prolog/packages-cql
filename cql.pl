@@ -42,9 +42,12 @@
 :-module(cql,
          [
           cql_execute/1,
+          cql_error/3,
           cql_data_type/10,
           cql_get_module_default_schema/2,
           cql_goal_expansion/3,
+          cql_event_notification_table/2,
+          cql_history_attribute/3,
           cql_identity/3,
           cql_odbc_select_statement/4,
           cql_odbc_state_change_statement/7,
@@ -872,7 +875,7 @@ The predicate must return the value you want as its last argument.  You specify 
 
 *Example* - Using domain allowed values in a query.
 
-In the following CQL statement the predicate domain_allowed_value/3 is called within findall/3 *|at compile time|* to generate a list of domain values that restrict favourite_colour to be 'ORANGE' or 'PINK' or 'BLUE', or 'GREEN'.
+In the following CQL statement the predicate cql_domain_allowed_value/3 is called within findall/3 *|at compile time|* to generate a list of domain values that restrict favourite_colour to be 'ORANGE' or 'PINK' or 'BLUE', or 'GREEN'.
 ==
 colour('ORANGE').
 colour('PINK').
@@ -912,7 +915,7 @@ to *|'MIKE'|* in every row inserted.
 ---++ Hooks (Event Processing and History)
 CQL provides hooks for maintaining detailed history of data in the database.
 
-The hook predicates are: event_notification_table/2, cql_history_attribute/3, cql_update_history_hook/16
+The hook predicates are: cql_event_notification_table/2, cql_history_attribute/3, cql_update_history_hook/16
 
 Event Processing and History recording can be suppressed for a particular
 update/insert/delete statement by including the _no_state_change_actions_9
@@ -1427,8 +1430,7 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
 cql_runtime(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber) :-
         catch(cql_runtime_1(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber),
               format(Format, Arguments),  % Want a backtrace for compile errors in compile_at_runtime statements at runtime
-              ( format(atom(Message), Format, Arguments),
-                throw(cql_error(Message)))).
+              cql_error(cql, Format, Arguments)).
 
 
 cql_runtime_1(Schema, IgnoreIfNullVariables, CqlA, CqlB, VariableMap, FileName, LineNumber) :-
@@ -5499,8 +5501,7 @@ identity_sql_server @
             cql_access_token_to_user_id(AccessToken, UserId),
             cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
-            format(atom(Message), 'Integer identity value expected but got ~q', [ScopeIdentity]),
-            throw(cql_error(bad_identity, Message))
+            cql_error(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity]) 
         ).
 
 identity_sqlite @
@@ -5518,8 +5519,7 @@ identity_sqlite @
             cql_access_token_to_user_id(AccessToken, UserId),
             cql_log([], informational, 'CQL\t~w\t~w\t   Inserted row has identity ~w\t(~w:~w)', [UserId, TransactionId, Identity, FileName, LineNumber])
         ; otherwise ->
-            format(atom(Message), 'Integer identity value expected but got ~q', [ScopeIdentity]),
-            throw(cql_error(bad_identity, Message))
+            cql_error(bad_identity, 'Integer identity value expected but got ~q', [ScopeIdentity])
         ).
 
 rows_affected @
@@ -6202,7 +6202,7 @@ inline_1([0'?|Codes], [OdbcParameter|OdbcParameters], FinalOdbcParameters) -->  
          ; OdbcParameter = odbc_parameter(_, _, _, ApplicationValue, where_value, _)
          ),
          atom(ApplicationValue),
-         domain_allowed_value(_, ApplicationValue),
+         cql_domain_allowed_value(_, ApplicationValue),
          !,
          atom_codes(ApplicationValue, ApplicationValueCodes)},
 
@@ -6389,8 +6389,7 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
 
         ; otherwise ->
             % Definitely a runtime exception (so use throw_exception to get full backtrace)
-            format(atom(Message), 'The value /~w/ being written to ~w.~w.~w cannot be mapped to a term compatible with the ODBC interface', [ApplicationValue, Schema, TableName, AttributeName]),
-            throw(cql_error(application_value_unmappable, Message))
+            cql_error(application_value_unmappable, 'The value /~w/ being written to ~w.~w.~w cannot be mapped to a term compatible with the ODBC interface', [ApplicationValue, Schema, TableName, AttributeName])
         ).
 
 
@@ -6475,8 +6474,7 @@ determine_update_table_key @
         ; database_identity(Schema, TableName, InvolvedColumn)->
             InvolvedColumns = [InvolvedColumn]
         ; otherwise->
-            format(atom(Message), 'Table ~w does not contain any keys. To do a LEFT OUTER JOIN in an update in PostgreSQL, you must add a key to the table you are trying to update', [TableName]),
-            throw(cql_error(cannot_join, Message))
+            cql_error(cannot_join, 'Table ~w does not contain any keys. To do a LEFT OUTER JOIN in an update in PostgreSQL, you must add a key to the table you are trying to update', [TableName])
         ),
         findall(InvolvedColumn-_, member(InvolvedColumn, InvolvedColumns), Key).
 
@@ -6696,7 +6694,7 @@ create_cql_pre_state_change_select_sql_for_deletes @
         create_cql_pre_state_change_select_sql(QueryId, StateChangeType, SqlFromTokens, TableName, OdbcParametersA)
         <=>
         StateChangeType == delete,
-        event_notification_table(Schema, TableName),
+        cql_event_notification_table(Schema, TableName),
         get_primary_key_attribute_name(Schema, TableName, PrimaryKeyAttributeName)
         |
         OdbcParametersB = [odbc_parameter(Schema, TableName, PrimaryKeyAttributeName, _, update_value, _)|OdbcParametersA],
@@ -6736,7 +6734,7 @@ identify_row_arising_from_insert_postgres @
         identify_insert_row(StateChangeType, QueryId, Schema, TableName, _, Value)
         <=>
         StateChangeType == insert,
-        event_notification_table(Schema, TableName),
+        cql_event_notification_table(Schema, TableName),
         get_primary_key_attribute_name(Schema, TableName, PrimaryKeyAttributeName)
         |
         Value = Identity,
@@ -6748,7 +6746,7 @@ identify_row_arising_from_insert_mssql @
         <=>
         dbms(Schema, 'Microsoft SQL Server'),
         StateChangeType == insert,
-        event_notification_table(Schema, TableName),
+        cql_event_notification_table(Schema, TableName),
         get_primary_key_attribute_name(Schema, TableName, PrimaryKeyAttributeName)
         |
         compile_tokens(['SELECT CAST(@@IDENTITY AS INTEGER), COLUMNPROPERTY(OBJECT_ID(\'', table_name(TableName), '\'),\'', attribute_name(PrimaryKeyAttributeName), '\',\'IsIdentity\')'], HalfCompiledSql),
@@ -7146,7 +7144,7 @@ is_state_change_attribute(StateChangeType,    % +
                           TableName,          % +
                           AttributeName) :-   % +
 
-        once(( event_notification_table(Schema, TableName)
+        once(( cql_event_notification_table(Schema, TableName)
              ; StateChangeType == update,
                cql_history_attribute(Schema, TableName, AttributeName)
              )).
@@ -7978,7 +7976,7 @@ check_compile_condition(Condition):-
         ; Condition == compile ->
             true
         ; otherwise->
-            throw(cql_error(bad_cql_compile_instruction, Condition))
+            cql_error(bad_cql_compile_instruction, '~w', [Condition])
         ).
 
 
@@ -8285,9 +8283,9 @@ cql_port_label(external_exception, 'ERROR ', red).
 :-multifile(cql_update_history_hook/14).
 
 
-%%      event_notification_table(+Schema,
+%%      cql_event_notification_table(+Schema,
 %%                               +TableName).
-:-multifile(event_notification_table/2).
+:-multifile(cql_event_notification_table/2).
 
 %%      cql_history_attribute(+Schema,
 %%                            +TableName,
@@ -8308,7 +8306,7 @@ timestamp_to_unambiguous_atom(timestamp(Y, M, D, H, Min, S, Ms), Atom):-
 
 
 :-multifile(cql_inline_domain_value_hook/2).
-domain_allowed_value(Domain, Value):-
+cql_domain_allowed_value(Domain, Value):-
         cql_inline_domain_value_hook(Domain, Value).
 
 
@@ -8348,3 +8346,10 @@ cql_normalize_name(DBMS, CQLName, DBMSName):-
             true
         ; CQLName = DBMSName
         ).
+
+:-multifile(cql_error_hook/3).
+cql_error(ErrorId, Format, Arguments):-
+        cql_error_hook(ErrorId, Format, Arguments).
+cql_error(ErrorId, Format, Arguments):-
+        format(atom(Message), Format, Arguments),
+        throw(cql_error(ErrorId, Message)).
