@@ -53,7 +53,7 @@
           cql_post_state_change_select_sql/4,
           cql_pre_state_change_select_sql/7,
           cql_runtime/7,
-          cql_update_history_hook/16,
+          cql_update_history_hook/14,
           cql_set_module_default_schema/1,
           cql_show/2,
           cql_state_change_statistics_sql/8,
@@ -7196,7 +7196,7 @@ call_history_hook @
 
         get_transaction_context(TransactionId, _, AccessToken, TransactionTimestamp, _),
         thread_self(ThreadId),
-        database_transaction_query_info(ThreadId, UserId, UserIpAddress, Spid, Goal),
+        database_transaction_query_info(ThreadId, Goal, Info),
 
         debug(cql(history), '(3): ~w, ~w, ~w, ~w, ~w', [Schema, TableName, PrimaryKeyAttributeName, PrimaryKeyValue, AttributeName]),
 
@@ -7213,12 +7213,10 @@ call_history_hook @
                                   ApplicationValueBefore,
                                   ApplicationValueAfter,
                                   AccessToken,
-                                  UserId,
-                                  UserIpAddress,
+                                  Info,
                                   TransactionId,
                                   TransactionTimestamp,
                                   ThreadId,
-                                  Spid,
                                   Connection,
                                   Goal),
                      E,
@@ -7237,12 +7235,10 @@ history_hook(Schema,                      % +
              ApplicationValueBefore,      % +
              ApplicationValueAfter,       % +
              AccessToken,                 % +
-             UserId,                      % +
-             UserIpAddress,               % +
+             Info,                        % +
              TransactionId,               % +
              TransactionTimestamp,        % +
              ThreadId,                    % +
-             Spid,                        % +
              Connection,                  % +
              Goal) :-                     % +
 
@@ -7262,12 +7258,10 @@ history_hook(Schema,                      % +
                        ApplicationValueBefore,
                        ApplicationValueAfter,
                        AccessToken,
-                       UserId,
-                       UserIpAddress,
+                       Info,
                        TransactionId,
                        TransactionTimestamp,
                        ThreadId,
-                       Spid,
                        Connection,
                        Goal).
 
@@ -8263,12 +8257,9 @@ cql_port_label(external_exception, 'ERROR ', red).
 %%                              +ApplicationValueBefore,
 %%                              +ApplicationValueAfter,
 %%                              +AccessToken,
-%%                              +UserId,
-%%                              +UserIpAddress,
 %%                              +TransactionId,
 %%                              +TransactionTimestamp,
 %%                              +ThreadId,
-%%                              +Spid,
 %%                              +Connection,
 %%                              +Goal).
 %
@@ -8285,15 +8276,13 @@ cql_port_label(external_exception, 'ERROR ', red).
 %       @param ApplicationValueBefore <domain dependent>
 %       @param ApplicationValueAfter <domain dependent>
 %       @param AccessToken <atom>
-%       @param UserId <atom>
-%       @param UserIpAddress <atom>
+%       @param Info <term> (Arbitrary information determined by cql:cql_transaction_info_hook/5)
 %       @param TransactionId <atom>
 %       @param TransactionTimestamp <t7/7>
 %       @param ThreadId <atom>
-%       @param Spid <int>
 %       @param Connection <opaque>
 %       @param Goal <goal term> The goal passed to pri_db_trans
-:-multifile(cql_update_history_hook/16).
+:-multifile(cql_update_history_hook/14).
 
 
 %%      event_notification_table(+Schema,
@@ -8331,8 +8320,7 @@ cql_perf_time(T):- get_time(T). % This needs to do something else for Windows be
 % Can I do anything about the ugly compile: list of attributes in sqlite?
 % Sqlite seems to handle longvarchar and varchar(max) and text as different types to varchar(N). The type conversion fails and we end up inserting NULLs
 
-/*
-??(Goal):-
+trime(Goal):-
         setup_call_catcher_cleanup(format('CALL  ~q~n', [Goal]),
                                    Goal,
                                    Catcher,
@@ -8350,7 +8338,7 @@ cql_perf_time(T):- get_time(T). % This needs to do something else for Windows be
         ; otherwise->
             true
         ).
-*/
+
 
 %%      cql_normalize_name(+DBMS, +Name, -NormalizedName).
 %       Normalize a name which is potentially longer than the DBMS allows to a unique truncation

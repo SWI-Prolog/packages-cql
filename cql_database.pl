@@ -48,12 +48,13 @@
           odbc_value_to_application_value/5,
           cql_transaction/3,
           database_transaction_query_info/3,
+          current_transaction_id/1,
           transaction_active/0,
           register_database_connection_details/2,
           resolve_deadlock/1,
           database_connection_details/2,
           odbc_connection_call/3,
-          update_history/16,
+          update_history/14,
           odbc_cleanup_and_disconnect/1]).
 
 :-use_module(library(cql/cql)).
@@ -304,7 +305,7 @@ cql_transaction(Schema, AccessToken, Goal):-
                              retractall(database_event(_, _, _, _, _, _)),
                              flag(transaction_count, Count, Count+1),
                              retractall(transaction_active))),   % Removed last so if transaction_active succeeds while executing Goal then the other facts are still available to Goal
-        process_database_events(DatabaseEventsSet).
+        cql_process_database_events(DatabaseEventsSet).
 
 cql_transaction_1(Schema, AccessToken, Goal, DatabaseEventsSet):-
         ( transaction_context(ExistingTransactionId, _, _, _) ->
@@ -459,8 +460,8 @@ register_database_connection_details(Schema, ConnectionDetails) :-
         assert(database_connection_details(Schema, ConnectionDetails)).
 
 
-update_history(Schema, TableName, AttributeName, PrimaryKeyAttributeName, PrimaryKeyValue, ApplicationValueBefore, ApplicationValueAfter, AccessToken, UserId, UserIpAddress, TransactionId, TransactionTimestamp, ThreadId, Spid, Connection, Goal):-
-        ignore(cql_update_history_hook(Schema, TableName, AttributeName, PrimaryKeyAttributeName, PrimaryKeyValue, ApplicationValueBefore, ApplicationValueAfter, AccessToken, UserId, UserIpAddress, TransactionId, TransactionTimestamp, ThreadId, Spid, Connection, Goal)).
+update_history(Schema, TableName, AttributeName, PrimaryKeyAttributeName, PrimaryKeyValue, ApplicationValueBefore, ApplicationValueAfter, AccessToken, Info, TransactionId, TransactionTimestamp, ThreadId, Connection, Goal):-
+        ignore(cql_update_history_hook(Schema, TableName, AttributeName, PrimaryKeyAttributeName, PrimaryKeyValue, ApplicationValueBefore, ApplicationValueAfter, AccessToken, Info, TransactionId, TransactionTimestamp, ThreadId, Connection, Goal)).
 
 
 
@@ -494,7 +495,9 @@ odbc_value_to_application_value(Schema, TableSpec, ColumnName, OdbcValue, Applic
 catch_all(A, B, C):- catch(A, B, C).
 
 
-process_database_events(_).
+:-multifile(cql:process_database_events/1).
+cql_process_database_events(Events):-
+        ignore(cql:process_database_events(Events)).
 
 :-multifile(cql:cql_transaction_info_hook/2).
 store_transaction_info(AccessToken, Connection, DBMS, Goal):-
@@ -505,3 +508,8 @@ store_transaction_info(AccessToken, Connection, DBMS, Goal):-
         ),
         thread_self(ThreadId),
         assert(database_transaction_query_info(ThreadId, Goal, Info)).
+
+%%      current_transaction_id(-TransactionId).
+
+current_transaction_id(TransactionId):-
+        transaction_context(TransactionId, _, _, _).
