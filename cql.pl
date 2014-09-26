@@ -65,6 +65,7 @@
           cql_log/4,
           cql_history_attribute/3,
           cql_normalize_name/3,
+          cql_sql_clause/3,
           default_schema/1,
           odbc_execute_with_statistics/4,
           cql_access_token_to_user_id/2,
@@ -1308,7 +1309,7 @@ do_cql_compiletime_checks:-
         ).
 
 cql_compiletime_checks(Schema, Goals):-
-        forall(sql_clause(Goals, SQL, Parameters),
+        forall(cql_sql_clause(Goals, SQL, Parameters),
                check_decompilation(Schema, SQL, Parameters)).
 
 check_decompilation(Schema, HalfCompiledSql, HalfCompiledOdbcParameters):-
@@ -1368,16 +1369,17 @@ cql_goal_expansion(Schema, Cql, GoalExpansion) :-
         ).
 
 
-sql_clause(cql_odbc_state_change_statement(_, _, _, _, SQL, Parameters, _), SQL, Parameters).
-sql_clause(cql_pre_state_change_select_sql(_, _, _, _, SQL, _, Parameters), SQL, Parameters).
-sql_clause(cql_post_state_change_select_sql(_, _, Parameter, SQL), SQL, [odbc_explicit_type_parameter(Parameter, _, where_value)]).
-sql_clause(cql_odbc_select_statement(_, SQL, Parameters, _), SQL, Parameters).
-sql_clause((A, B), SQL, Parameters):-
-        ( sql_clause(A, SQL, Parameters)
-        ; sql_clause(B, SQL, Parameters)
+cql_sql_clause(cql_odbc_state_change_statement(_, _, _, _, SQL, Parameters, _), SQL, Parameters).
+cql_sql_clause(cql_pre_state_change_select_sql(_, _, _, _, SQL, _, Parameters), SQL, Parameters).
+cql_sql_clause(cql_post_state_change_select_sql(_, _, Parameter, SQL), SQL, [odbc_explicit_type_parameter(Parameter, _, where_value)]).
+cql_sql_clause(cql_odbc_select_statement(_, SQL, Parameters, _), SQL, Parameters).
+cql_sql_clause((A, B), SQL, Parameters):-
+        ( cql_sql_clause(A, SQL, Parameters)
+        ; cql_sql_clause(B, SQL, Parameters)
         ).
 
 :-multifile(cql_dependency_hook/2).
+:-multifile(cql_generated_sql_hook/1).
 cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
         ( prolog_load_context(source, FileName),
           prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)) ->
@@ -1412,7 +1414,8 @@ cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
 
             ; otherwise ->
                 true
-            )
+            ),
+            ignore(cql_generated_sql_hook(FileName, LineNumber, GoalExpansion))
         ; nonvar(CompilationDirective),
           CompilationDirective = compile_at_runtime(IgnoreIfNullVariables) ->
             % Should this be a compile warning? runtime-compilation should now be officially deprecated
