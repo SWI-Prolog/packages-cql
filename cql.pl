@@ -1328,7 +1328,8 @@ check_decompilation(Schema, HalfCompiledSql, HalfCompiledOdbcParameters):-
             \+sub_atom(Atom, _, _, _, 'COLLATE')
         ; otherwise->
             prolog_load_context(source, FileName),
-            prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)),
+            prolog_load_context(term_position, TermPosition),
+            stream_position_data(line_count, TermPosition, LineNumber),
             format(user_error, 'Could not decompile generated CQL: ~w~n~q~n', [FileName:LineNumber, HalfCompiledSql])
         ).
 
@@ -1379,10 +1380,11 @@ cql_sql_clause((A, B), SQL, Parameters):-
         ).
 
 :-multifile(cql_dependency_hook/2).
-:-multifile(cql_generated_sql_hook/1).
+:-multifile(cql_generated_sql_hook/3).
 cql_goal_expansion_1(Schema, (CompilationDirective, CqlA), GoalExpansion) :-
         ( prolog_load_context(source, FileName),
-          prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)) ->
+          prolog_load_context(term_position, TermPosition),
+          stream_position_data(line_count, TermPosition, LineNumber)->
             DynamicallyCreatedCql = boolean(false)
 
         ; otherwise ->
@@ -1906,7 +1908,8 @@ translate(_, _, _, absence_of_where_restriction_is_deliberate) --> !,
 
 translate(_, _, _, A=B) --> !,
         {(prolog_load_context(source, FileName),
-          prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)) ->
+          prolog_load_context(term_position, TermPosition),
+          stream_position_data(line_count, TermPosition, LineNumber)->
             true
          ; otherwise->
             FileName = '<Dynamically created CQL - no source file>',
@@ -2717,6 +2720,7 @@ add_sub_query_join_where @
         % No longer a SELECT binding in the sub-query; its now part of the sub query WHERE
         select_binding(SubQueryId, _, _, Variable)
         <=>
+        not_a_singleton(Variable),
         sub_query_join_variable(Variable),
         restriction_leaf(SubQueryId,
                          where,
@@ -5978,7 +5982,8 @@ union_if_external_variables_the_same_and_there_is_no_order_by @
 
         ( debugging(cql(union)) ->
             prolog_load_context(source, FileName),
-            prolog_load_context(term_position, '$stream_position'(_,  LineNumber, _, _, _)),
+            prolog_load_context(term_position, TermPosition),
+            stream_position_data(line_count, TermPosition, LineNumber),
             debug(cql(union), 'UNION created ~w:~w~n', [FileName, LineNumber])
         ;
             true
