@@ -375,7 +375,7 @@ cql_transaction_3(Goal, Connection, TransactionId, AccessToken, DatabaseEventsSe
 %
 %       *|Use this only when you are sure Goal has no non-database side effects (assert/retract, file operations etc)|*
 %
-%       Originally developed for use inside pri_db_trans/3, resolve_deadlock/1 can also be used to ensure non-transactional
+%       Originally developed for use inside cql_transaction/3, resolve_deadlock/1 can also be used to ensure non-transactional
 %       operations can resolve deadlocks.
 
 :-meta_predicate
