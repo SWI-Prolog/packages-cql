@@ -917,10 +917,64 @@ Note the use of the _as(d)_ construct in the SELECT part of the CQL to make
 the constant *|'MIKE'|* appear to come from the SELECT thus setting lt_x1.d
 to *|'MIKE'|* in every row inserted.
 
----++ Hooks (Event Processing and History)
+---++ Hooks
+CQL provides a large number of hooks to fine-tune behaviour and allow for customization. These are:
+
+---+++ Generated Code Hooks
+   * cql:cql_dependency_hook(+EntitySet, +Module) can be defined to be notified when a given Module references a list of database entities. This can be used to manage metadata/code dependency
+   * cql:cql_generated_sql_hook(+Filename, +LineNumber, +Goals) can be defined to examine generated SQL. Use cql_sql_clause(+Goals, -SQL, -Parameters) to examine the goals
+   * cql:cql_index_suggestion_hook(+Index) can be defined if you are interested in proposed indices for your schema. Note that this is not very mature (yet)
+
+---+++ Data Representation Hooks
+   * cql:cql_atomic_value_check_hook(+Value) can be defined to declare new 'atomic' types (That is, types which can be written directly to the database), such as a representation like boolean(true) for 1.
+   * cql:cql_check_value_hook(+Value) can be used to check that a value is legal
+   * cql:application_value_to_odbc_value_hook(+OdbcDataType, +Schema, +TableName, +ColumnName, +Qualifiers, +ApplicationValue, -OdbcValue).
+   * cql:odbc_value_to_application_value_hook(+OdbcDataType, +Schema, +TableName, +ColumnName, +Domain, +OdbcValue, -ApplicationValue).
+
+---+++ Application Integration
+   * cql:cql_access_token_hook(+AccessToken, -UserId) can be defined to map the generic 'AccessToken' passed to cql_transaction/3 to a user ID. If not defined, the AccessToken is assumed to be the user ID. This UserID is used in logging.
+   * cql:log_selects/0 can be defined if you want to receive logging information about selects. By default only update, delete and insert are logged
+   * cql:cql_execution_hook(+Statement, +OdbcParameters, +OdbcParameterDataTypes, -Row) can be defined if you want to implement the exeuction yourself (for example, to add extra debugging)
+   * cql:cql_log_hook(+Topics, +Level, +Format, +Args) can be defined to redirect CQL logging.
+      * Levels is one of informational, warning, or error
+      * Topics is a list of topics. Currently the only lists possible are [] and [debug(deadlocks)]
+   * cql:sql_gripe_hook/3 is called when suspect SQL is found by the SQL parser
+   * cql:cql_normalize_atom_hook(+DBMS, +ApplciationAtom, -DBMSAtom) can be used to create a map for atoms in a specific DBMS. For example, your schema may have arbitrarily long table names, but your DBMS may only allow names up to 64 bytes long. In this case, you can create a scheme for mapping the application-level atom to the DBMS. Other uses include deleting or normalizing illegal characters in names
+   * cql:cql_error_hook(+ErrorId, +Format, +Args) can be defined to generate a specific exception term from the given arguments. If not defined (or if it does not throw an exception, or fails), you will get cql_error(ErrorId, FormattedMessage).
+   * cql:cql_max_db_connections_hook(-Max) can be defined to limit the number of simultaneous connections each thread will attempt to have
+   * cql:cql_transaction_context_hook/5
+   * cql:odbc_connection_complete_hook(+Schema, +Details, +Connection) can be hooked if you want to know every time a connection is made
+   * cql:cql_transaction_info_hook(+AccessToken, +Connection, +DBMS, +Goal, -Info) can be defined if you want to define any application-defined information on a per-transaction level. This can be recovered via database_transaction_query_info(?ThreadId, ?Goal, ?Info).
+
+---+++ Inline values
+   * cql:cql_inline_domain_value_hook(+DomainName, +Value) can be defined if you want the given value to be 'inlined' into the CQL (ie not supplied as a parameter). Great care must be taken to avoid SQL injection attacks if this is used.
+
+---+++ Schema
+These define the schema. You MUST either define them, or include library(cql/cql_autoschema) and add two directives to build the schema automatically:
+   * :-register_database_connection_details(+Schema, +ConnectionInfo).
+   * :-build_schema(+Schema).
+
+Otherwise, you need to define at least default_schema/1 and dbms/2, and then as many of the other facts as needed for your schema.
+   * cql:default_schema(-Schema) MUST be defined. CQL autoschema will define this for you if you use it.
+   * cql:dbms(+Schema, -DBMS) MUST be defined for every schema you use. CQL autoschema will define this for you if you use it. DBMS must be one of the following:
+      * 'Microsoft SQL Server'
+      * 'PostgreSQL'
+      * 'SQLite'
+   * cql:odbc_data_type(+Schema, +TableName, +ColumnName, +OdbcDataType).
+   * cql:primary_column_name(+Schema, +Tablename, +ColumnName).
+   * cql:database_attribute(+EntityType:table/view, +Schema:atom, +EntityName:atom, +ColumnName:atom, +DomainOrNativeType:atom, +AllowsNulls:allows_nulls(true/false), +IsIdentity:is_identity(true/false), +ColumnDefault).
+   * cql:database_domain(+DomainName, +OdbcDataType).
+   * cql:routine_return_type(+Schema, +RoutineName, +OdbcDataType).
+   * cql:database_constraint(+Schema, +EntityName, +ConstraintName, +Constraint).
+
+---+++ Event Processing and History
 CQL provides hooks for maintaining detailed history of data in the database.
 
-The hook predicates are: cql_event_notification_table/2, cql_history_attribute/3, cql_update_history_hook/16
+The hook predicates are:
+   * cql:cql_event_notification_table(+Schema, +TableName)
+   * cql:cql_history_attribute(+Schema, +TableName, +ColumnName)
+   * cql:cql_update_history_hook(+Schema, +TableName, +ColumnName, +PrimaryKeyColumnName, +PrimaryKeyValue, +ApplicationValueBefore, +ApplicationValueAfter, +AccessToken, +TransactionId, +TransactionTimestamp, +ThreadId, +Connection, +Goal).
+   * cql:process_database_events(+Events)
 
 Event Processing and History recording can be suppressed for a particular
 update/insert/delete statement by including the _no_state_change_actions_9
@@ -943,13 +997,13 @@ Often the kind of statistics of interest are 'how many rows in this table are in
 
 To ensure that all (CQL-originated) updates to statuses are captured, it's possible to use the CQL hook system to update them automatically. Define add a fact like:
 
-monitor_attribute_for_statistics(my_schema, my_table, my_table_status_column).
+cql_statistic_monitored_attribute_hook(my_schema, my_table, my_table_status_column).
 
 This will examine the domain for the column 'my_table_status_column', and generate a statistic for each of my_table::my_table_status_column(xxx), where xxx is each possible allowed value for the domain. Code will be automatically generated to trap updates to this specific column, and maintain the state. This way, if you are interested in the number of rows in my_table which have a status of 'NEW', you can look at my_table::my_table_status_column('NEW'), without having to manage the state directly. CQL update statements which affect the status will automatically maintain the statistics.
 
 The calculations are vastly simpler than the history mechanism, so as to keep performance as high as possible. For inserts, there is no cost to monitoring the table (the insert simply increments the statistic if the transaction completes). For deletes, the delete query is first run as a select, aggregating on the monitored columns to find the number of deletes for each domain allowed value. This means that a delete of millions of rows might requires a select returning only a single row for statistics purposes. For updates, the delete code is run, then the insert calculation is done, multiplied by the number of rows affected by the update.
 
-In all cases, CQL ends up calling statistic_monitored_attribute_change/5, where the last argument is a signed value indicating the number of changes to that particular statistic.
+In all cases, CQL ends up calling cql_statistic_monitored_attribute_change_hook/5, where the last argument is a signed value indicating the number of changes to that particular statistic.
 
 
 */

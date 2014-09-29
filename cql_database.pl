@@ -500,7 +500,7 @@ catch_all(A, B, C):- catch(A, B, C).
 cql_process_database_events(Events):-
         ignore(cql:process_database_events(Events)).
 
-:-multifile(cql:cql_transaction_info_hook/2).
+:-multifile(cql:cql_transaction_info_hook/5).
 store_transaction_info(AccessToken, Connection, DBMS, Goal):-
         ( cql:cql_transaction_info_hook(AccessToken, Connection, DBMS, Goal, Info)->
             true
