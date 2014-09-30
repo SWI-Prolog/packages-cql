@@ -70,22 +70,16 @@
         transaction_context/4,
         database_transaction_query_info/3.
 
-:-multifile(cql:cql_transaction_context_hook/5).
-
 get_transaction_context(TransactionId, TrxId, AccessToken, TransactionTimestamp, Connection) :-
-        ( cql:cql_transaction_context_hook(TransactionId, TrxId, AccessToken, TransactionTimestamp, Connection)->
-            true
-        ; otherwise->
-            ( transaction_context(TransactionId_, AccessToken_, TransactionTimestamp_, Connection_) ->
-                TransactionId = TransactionId_,
-                TrxId = {null},
-                AccessToken = AccessToken_,
-                TransactionTimestamp = TransactionTimestamp_,
-                Connection = Connection_
-
-            ; otherwise ->
-                throw(no_database_transaction_active)
-            )
+        ( transaction_context(TransactionId_, AccessToken_, TransactionTimestamp_, Connection_) ->
+            TransactionId = TransactionId_,
+            TrxId = {null},
+            AccessToken = AccessToken_,
+            TransactionTimestamp = TransactionTimestamp_,
+            Connection = Connection_
+        
+        ; otherwise ->
+            throw(no_database_transaction_active)
         ).
 
 

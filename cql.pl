@@ -933,16 +933,15 @@ CQL provides a large number of hooks to fine-tune behaviour and allow for custom
 
 ---+++ Application Integration
    * cql:cql_access_token_hook(+AccessToken, -UserId) can be defined to map the generic 'AccessToken' passed to cql_transaction/3 to a user ID. If not defined, the AccessToken is assumed to be the user ID. This UserID is used in logging.
-   * cql:log_selects/0 can be defined if you want to receive logging information about selects. By default only update, delete and insert are logged
+   * cql:log_selects can be defined if you want to receive logging information about selects. By default only update, delete and insert are logged
    * cql:cql_execution_hook(+Statement, +OdbcParameters, +OdbcParameterDataTypes, -Row) can be defined if you want to implement the exeuction yourself (for example, to add extra debugging)
    * cql:cql_log_hook(+Topics, +Level, +Format, +Args) can be defined to redirect CQL logging.
       * Levels is one of informational, warning, or error
       * Topics is a list of topics. Currently the only lists possible are [] and [debug(deadlocks)]
-   * cql:sql_gripe_hook/3 is called when suspect SQL is found by the SQL parser
+   * cql:sql_gripe_hook(+Level, +Format, +Args) is called when suspect SQL is found by the SQL parser
    * cql:cql_normalize_atom_hook(+DBMS, +ApplciationAtom, -DBMSAtom) can be used to create a map for atoms in a specific DBMS. For example, your schema may have arbitrarily long table names, but your DBMS may only allow names up to 64 bytes long. In this case, you can create a scheme for mapping the application-level atom to the DBMS. Other uses include deleting or normalizing illegal characters in names
    * cql:cql_error_hook(+ErrorId, +Format, +Args) can be defined to generate a specific exception term from the given arguments. If not defined (or if it does not throw an exception, or fails), you will get cql_error(ErrorId, FormattedMessage).
    * cql:cql_max_db_connections_hook(-Max) can be defined to limit the number of simultaneous connections each thread will attempt to have
-   * cql:cql_transaction_context_hook/5
    * cql:odbc_connection_complete_hook(+Schema, +Details, +Connection) can be hooked if you want to know every time a connection is made
    * cql:cql_transaction_info_hook(+AccessToken, +Connection, +DBMS, +Goal, -Info) can be defined if you want to define any application-defined information on a per-transaction level. This can be recovered via database_transaction_query_info(?ThreadId, ?Goal, ?Info).
 
@@ -954,7 +953,7 @@ These define the schema. You MUST either define them, or include library(cql/cql
    * :-register_database_connection_details(+Schema, +ConnectionInfo).
    * :-build_schema(+Schema).
 
-Otherwise, you need to define at least default_schema/1 and dbms/2, and then as many of the other facts as needed for your schema.
+Otherwise, you need to define at least cql:default_schema/1 and cql:dbms/2, and then as many of the other facts as needed for your schema.
    * cql:default_schema(-Schema) MUST be defined. CQL autoschema will define this for you if you use it.
    * cql:dbms(+Schema, -DBMS) MUST be defined for every schema you use. CQL autoschema will define this for you if you use it. DBMS must be one of the following:
       * 'Microsoft SQL Server'
