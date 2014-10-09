@@ -1,6 +1,8 @@
 *~
 configure
 cql.tex
+cqldoc.tex
+cql.html
 cql.pdf
 Makefile
 autom4te.cache
