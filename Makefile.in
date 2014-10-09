@@ -49,7 +49,7 @@ TEXEXTRA=	cql.tex cqldoc.tex
 $(TEX):		$(TEXEXTRA)
 
 cqldoc.tex:	cql.pl
-		$(PLTOTEX) --section --out=cqldoc.tex 'library(cql/cql)'
+		$(PLTOTEX) --out=cqldoc.tex 'library(cql/cql)'
 
 ################################################################
 # Clean
@@ -57,7 +57,7 @@ cqldoc.tex:	cql.pl
 
 clean:
 		rm -f *~ *% config.log
-		rm -f cql.tex
+		rm -f cql.tex cqldoc.tex
 
 distclean:	clean
 		rm -f config.h config.cache config.status Makefile
