@@ -45,11 +45,11 @@ check::
 # Documentation
 ################################################################
 
-TEXEXTRA=	cql.tex
+TEXEXTRA=	cql.tex cqldoc.tex
 $(TEX):		$(TEXEXTRA)
 
-cql.tex:	cql.pl
-		$(PLTOTEX) --subsection --out=cql.tex 'library(cql)'
+cqldoc.tex:	cql.pl
+		$(PLTOTEX) --section --out=cqldoc.tex 'library(cql/cql)'
 
 ################################################################
 # Clean
