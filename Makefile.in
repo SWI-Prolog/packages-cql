@@ -10,7 +10,9 @@ include ../Makefile.defs
 EXDIR=$(DESTDIR)$(PKGEXDIR)/cql
 PKGPLLIBDIR=$(PLBASE)/library/cql
 
-LIBPL=		cql.pl sql_parser.pl sql_tokenizer.pl sql_write.pl sql_keywords.pl cql_database.pl cql_autoschema.pl cql_hooks.pl cql_demo.pl
+LIBPL=		cql.pl sql_parser.pl sql_tokenizer.pl sql_write.pl \
+		sql_keywords.pl cql_database.pl cql_autoschema.pl \
+		cql_hooks.pl cql_demo.pl
 
 all::
 		@echo "Nothing to be done for this package"
@@ -36,6 +38,8 @@ html-install:
 uninstall:
 		(cd $(PLLIBDIR) && rm -f $(LIBPL))
 
+check::
+		true
 
 ################################################################
 # Documentation
