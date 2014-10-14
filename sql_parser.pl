@@ -524,11 +524,24 @@ value_expression(V, T)---> numeric_value_expression(V, T), \+(@concatenation_ope
 % TBD: This should ALSO be applied for subtract, since CURRENT_TIMESTAMP - 1 is not subtract but add_interval(CURRENT_TIMESTAMP, -1)
 
 numeric_value_expression(V, T)--->
-        term(LHS, LT1), qid(Qid), {left_factor_types(Qid, LT1, LT)},
+        numeric_value_expression_1(V, T1),
+        qid(Qid),
+        {left_factor_types(Qid, T1, T)}.
+
+numeric_value_expression_1(V, T)--->
+        get_source(LS), term(LHS, LT), qid(Qid),
         ( ( @plus_sign, {Op = add} | @minus_sign, {Op = subtract} ),
-          {freeze(T, determine_operation_from_types(T, LT, RT, Op, LHS, RHS, V))},
-          get_source(Source),
-        numeric_value_expression(RHS, RT),  {most_general_type(Qid, Source, Source, LT, RT, Op, T)}
+          get_source(RS),
+          numeric_value_expression_1(RHS, RT),
+          {T = node(LT, LS, Op, RT, RS),
+           % T1 is not the type of the subexpression (since this sub-expression may not even exist in the final result)
+           % but it IS needed to determine whether the operation is +(addition) or +(concatenation) since SQL Server
+           % doesnt distinguish these with syntax
+           % Similarly R1 is not necessarily needed for the SQL, but it IS needed here
+           left_factor_types(Qid, RT, R1),
+           left_factor_types(Qid, LT, L1),
+           most_general_type(Qid, Source, Source, L1, R1, Op, T1),
+           freeze(T1, determine_operation_from_types(T1, L1, R1, Op, LHS, RHS, V))}
         | {V = LHS, T = LT}
         ).
 
