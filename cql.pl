@@ -2436,6 +2436,7 @@ atomic_application_value(ApplicationValue) :-  % +
         ; atom(ApplicationValue)
         ; integer(ApplicationValue)
         ; rational(ApplicationValue)
+	; timestamp(ApplicationValue)
         ; cql_atomic_value_check_hook(ApplicationValue)
         ; is_list(ApplicationValue)
         ; ApplicationValue == {null}
@@ -2444,6 +2445,10 @@ atomic_application_value(ApplicationValue) :-  % +
         ; ApplicationValue == {transaction_id}
         ),
         !.
+
+timestamp(TS) :-
+	compound(TS),
+	functor(TS, timestamp, 7).
 
 
 ensure_binding_is_on_the_external_variable_so_that_ignore_if_null_works_properly_1 @
@@ -6641,7 +6646,8 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
                 OdbcDataType_1 = OdbcDataTypeOverride   % Used for count(a.x) : the type of count is integer, not the type of the attribute a.x being counted
 
             ; otherwise ->
-                odbc_data_type(Schema, TableName, AttributeName, OdbcDataType_1)
+                odbc_data_type(Schema, TableName, AttributeName, OdbcDataType_0),
+	        sql_odbc_datatype(OdbcDataType_0, OdbcDataType_1)
             )
 
         ; OdbcParameter = odbc_explicit_type_parameter(ExplicitOdbcDataType, ApplicationValue, OdbcParameterUse) ->
@@ -6734,6 +6740,8 @@ odbc_data_type_and_input(OdbcParameter, UserId, TransactionId, TransactionTimest
             cql_error(application_value_unmappable, 'The value /~w/ being written to ~w.~w.~w cannot be mapped to a term compatible with the ODBC interface', [ApplicationValue, Schema, TableName, AttributeName])
         ).
 
+sql_odbc_datatype('timestamp without time zone', timestamp) :- !.
+sql_odbc_datatype(Type, Type).
 
 bind_application_values([], []).
 
