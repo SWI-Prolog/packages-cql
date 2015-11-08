@@ -11,11 +11,11 @@
 \htmlmainfile{cql}			% Main document file
 \bodycolor{white}			% Page colour
 
-\renewcommand{\runningtitle}{Constraing Query Language}
+\renewcommand{\runningtitle}{Constraint Query Language}
 
 \begin{document}
 
-\title{Constraing Query Language\\
+\title{Constraint Query Language\\
        A high level interface to SQL databases}
 \author{Mike Elston \\
         Matt Lilley \\
