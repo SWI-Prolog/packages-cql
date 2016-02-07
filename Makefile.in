@@ -1,7 +1,7 @@
 ################################################################
 # SWI-Prolog CQL package
 # Author:    Mike Elston, Matt Lilley
-# Copyright: GPL (see COPYING or www.gnu.org)
+# Copyright: Simplified BSD
 ################################################################
 
 PACKAGE=cql
