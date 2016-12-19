@@ -78,7 +78,7 @@ get_transaction_context(TransactionId, TrxId, AccessToken, TransactionTimestamp,
             AccessToken = AccessToken_,
             TransactionTimestamp = TransactionTimestamp_,
             Connection = Connection_
-        
+
         ; otherwise ->
             throw(no_database_transaction_active)
         ).
@@ -111,7 +111,7 @@ odbc_connection_call(Schema, Connection, Goal) :-
           ),
           N >= MaxDbConnections ->
             thread_self(ThreadId),
-            
+
             cql_error(too_many_schema_connections, 'Too many connections on ~w: Maximum is ~w', [ThreadId, MaxDbConnections])
 
         ; database_connection_details(Schema, ConnectionDetails) ->
