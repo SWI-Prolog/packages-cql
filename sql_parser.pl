@@ -512,7 +512,7 @@ column_name(Name)---> #Identifier, \+(@left_paren),
         ; otherwise->
              downcase_atom(Identifier, Name)
         )}.
-explicit_table(table(Table)) ---> @table, table_name(Table).
+explicit_table(table(Table)) ---> @(table), table_name(Table).
 qualifier(Qualifier)---> qualified_name(Qualifier).
 % If this were a numeric_value_expression followed by /plus/ (as distinct but indistiguishable from /concat/) then it
 % would have been absorbed into the numeric_value_expression. The only time we would exist numeric_value_expression and consume a +
