@@ -10,3 +10,6 @@ swipl_plugin(cql
 		     cql_hooks.pl)
 
 swipl_examples(cql_demo.pl)
+
+pkg_doc(cql
+	SOURCE cql.pl cqldoc.tex "library('cql/cql')")
