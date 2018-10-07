@@ -11,5 +11,7 @@ swipl_plugin(cql
 
 swipl_examples(cql_demo.pl)
 
-pkg_doc(cql
-	SOURCE cql.pl cqldoc.tex "library('cql/cql')")
+pkg_doc(
+  cql
+  SOURCE cql.pl cqldoc.tex "library('cql/cql')"
+  DEPENDS cql chr)
