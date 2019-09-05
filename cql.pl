@@ -65,7 +65,6 @@
           cql_statement_location/2,
           cql_temporary_column_name/4,
           cql_log/4,
-          cql_history_attribute/3,
           cql_normalize_name/3,
           cql_sql_clause/3,
           default_schema/1,

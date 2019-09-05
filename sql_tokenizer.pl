@@ -145,7 +145,6 @@ sql_token('<')--> "<", !.
 sql_token('>')--> ">", !.
 sql_token('.')--> ".", !.
 sql_token(',')--> ",", !.
-sql_token(',')--> ",", !.
 sql_token('(')--> "(", !.
 sql_token(')')--> ")", !.
 sql_token('/')--> "/", !.

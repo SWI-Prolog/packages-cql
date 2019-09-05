@@ -114,11 +114,9 @@ reserved_sql_keyword(double).
 reserved_sql_keyword(drop).
 reserved_sql_keyword(else).
 reserved_sql_keyword(end).
-reserved_sql_keyword(end).
 reserved_sql_keyword(exec).
 reserved_sql_keyword(escape).
 reserved_sql_keyword(except).
-reserved_sql_keyword(exec).
 reserved_sql_keyword(execute).
 reserved_sql_keyword(exists).
 reserved_sql_keyword(external).
@@ -270,6 +268,5 @@ reserved_sql_keyword(replace).
 reserved_sql_keyword(dateadd).
 reserved_sql_keyword(datediff).
 reserved_sql_keyword(charindex).
-reserved_sql_keyword(substring).
 reserved_sql_keyword(datepart).
 reserved_sql_keyword(abs).
