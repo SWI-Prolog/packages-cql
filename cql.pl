@@ -8682,7 +8682,7 @@ trime(Goal):-
                                    ; Catcher == exit->
                                        format('EXIT  ~q~n', [Goal])
                                    ; Catcher = error(E)->
-                                       format('ERROR  ~q~n~w~n', [E])
+                                       format('ERROR  ~q~n~w~n', [Goal, E])
                                    )),
         ( var(Catcher)->
             format('PEND  ~q~n', [Goal])
