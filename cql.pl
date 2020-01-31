@@ -6745,19 +6745,14 @@ sql_odbc_datatype('timestamp without time zone', timestamp) :- !.
 sql_odbc_datatype(Type, Type).
 
 bind_application_values([], []).
-
 bind_application_values([ignore_output|Outputs], [_|OdbcOutputs]) :- !,
         bind_application_values(Outputs, OdbcOutputs).
-
 bind_application_values([count(Count)|Outputs], [Count|OdbcOutputs]) :- !,
         bind_application_values(Outputs, OdbcOutputs).
-
 bind_application_values([avg(Avg)|Outputs], [AvgAtom|OdbcOutputs]) :- !,
         atom_to_term(AvgAtom, AvgFloat, _),
-        Avg is rationalize(AvgFloat),
-        %atom_to_rational(AvgAtom, Avg),
+        rationalize(AvgFloat, Avg),
         bind_application_values(Outputs, OdbcOutputs).
-
 bind_application_values([Output|Outputs],
                         [OdbcOutput|OdbcOutputs]) :- !,
         ( OdbcOutput == {null} ->
@@ -6778,6 +6773,13 @@ bind_application_values([Output|Outputs],
             )
         ),
         bind_application_values(Outputs, OdbcOutputs).
+
+:- if(current_prolog_flag(bounded, false)).
+rationalize(Float, Rat) :-
+        Rat is rationalize(Float).
+:- else.
+rationalize(Float, Float).
+:- endif.
 
 
 determine_update_table_name_in_implicit_join @
