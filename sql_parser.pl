@@ -135,6 +135,7 @@ Because we have truncation, the order of operations is crucial: Although (x * y)
 :-op(1200, xfx, --->).
 
 :-use_module(library(chr)).
+:-use_module(library(quintus), [otherwise/0]).
 :-use_module(library(dcg/basics)).
 :-use_module(library(cql/sql_keywords)).
 :-use_module(library(cql/sql_write)).
