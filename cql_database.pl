@@ -59,6 +59,7 @@
           odbc_cleanup_and_disconnect/1]).
 
 :-use_module(library(cql/cql)).
+:-use_module(library(debug)).
 
 :-dynamic
         database_connection_details/2.

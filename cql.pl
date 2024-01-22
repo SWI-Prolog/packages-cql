@@ -103,6 +103,7 @@
 
 :-use_module(library(chr)).
 :-use_module(library(dcg/basics)).
+:-use_module(library(debug)).
 :-use_module(library(cql/sql_parser)).
 :-use_module(library(cql/sql_tokenizer)).
 :-use_module(library(cql/sql_write)).
