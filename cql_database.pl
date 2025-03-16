@@ -219,10 +219,11 @@ evict_cache_entries(Key, N):-
             % Just do nothing in this case. We will get it next time. Besides, it is very unlikely to happen
             true
         ; otherwise->
-            thread_self(ThreadId),
-            retract(cached_prepared_odbc_statement(Sql, _, _, _, _, Statement, MutexId)),
+            thread_self(_0ThreadId),
+            retract(cached_prepared_odbc_statement(_0Sql, _, _, _, _, Statement, MutexId)),
             odbc_free_statement(Statement),
-            debug(odbc_statement_cache, 'CACHE-EVICT [~w] ~w : ~@', [ThreadId, Statement, trimmed_sql(Sql, 80)]),
+            debug(odbc_statement_cache, 'CACHE-EVICT [~w] ~w : ~@',
+                  [_0ThreadId, Statement, trimmed_sql(_0Sql, 80)]),
             flag(Key, X, X-1)
         ),
         NN is N-1,
