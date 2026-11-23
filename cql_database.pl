@@ -296,7 +296,10 @@ save_database_event(AccessToken,                             % +
         ).
 
 
-:-meta_predicate(cql_transaction(+, +, 0)).
+:-meta_predicate
+        cql_transaction(+, +, 0),
+        cql_transaction_3(0, +, +, +, -),
+        resolve_deadlock(0).
 
 cql_transaction(Schema, AccessToken, Goal):-
         thread_self(ThreadId),
@@ -343,9 +346,6 @@ cql_transaction_2(Schema, AccessToken, Goal, DatabaseEventsSet) :-
                                ))).
 
 
-:-meta_predicate
-        cql_transaction_3(0, +, +, +, -).
-
 cql_transaction_3(Goal, Connection, TransactionId, AccessToken, DatabaseEventsSet) :-
         log_transaction_state(AccessToken, TransactionId, transaction_starting),
         catch(Goal, E, Error = E),
@@ -378,9 +378,6 @@ cql_transaction_3(Goal, Connection, TransactionId, AccessToken, DatabaseEventsSe
 %
 %       Originally developed for use inside cql_transaction/3, resolve_deadlock/1 can also be used to ensure non-transactional
 %       operations can resolve deadlocks.
-
-:-meta_predicate
-        resolve_deadlock(0).
 
 resolve_deadlock(Goal) :-
         thread_self(ThreadId),
